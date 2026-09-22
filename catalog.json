@@ -1,0 +1,316 @@
+{
+  "note": "The Opsfy catalogue for the CLI: 31 tools in the Paid, Free and Coming soon buckets; free apps carry their install recipe (a Homebrew cask from the upstream release, or a git clone and the app's own setup).",
+  "version": "2026-09-22",
+  "tools": [
+    {
+      "slug": "openrouter",
+      "name": "OpenRouter",
+      "line": "Every model from every lab, one API",
+      "kind": "paid",
+      "licence": null,
+      "url": "https://openrouter.ai/",
+      "bucket": "paid"
+    },
+    {
+      "slug": "elevenlabs",
+      "name": "ElevenLabs",
+      "line": "Voices, dubbing, voice agents",
+      "kind": "paid",
+      "licence": null,
+      "url": "https://elevenlabs.io/",
+      "bucket": "paid"
+    },
+    {
+      "slug": "krea",
+      "name": "Krea",
+      "line": "Image and video generation, upscaling",
+      "kind": "paid",
+      "licence": null,
+      "url": "https://www.krea.ai/",
+      "bucket": "paid"
+    },
+    {
+      "slug": "runway",
+      "name": "Runway",
+      "line": "Video generation, Gen-4.5 and Act-Two",
+      "kind": "paid",
+      "licence": null,
+      "url": "https://runwayml.com/",
+      "bucket": "paid"
+    },
+    {
+      "slug": "apify",
+      "name": "Apify",
+      "line": "Web scrapers and automations",
+      "kind": "paid",
+      "licence": null,
+      "url": "https://apify.com/",
+      "bucket": "paid"
+    },
+    {
+      "slug": "replicate",
+      "name": "Replicate",
+      "line": "Run open models, billed by the second",
+      "kind": "paid",
+      "licence": null,
+      "url": "https://replicate.com/",
+      "bucket": "paid"
+    },
+    {
+      "slug": "fal",
+      "name": "fal.ai",
+      "line": "Image, video and audio models, fast",
+      "kind": "paid",
+      "licence": null,
+      "url": "https://fal.ai/",
+      "bucket": "paid"
+    },
+    {
+      "slug": "together",
+      "name": "Together AI",
+      "line": "Open models, fast inference and fine-tuning",
+      "kind": "paid",
+      "licence": null,
+      "url": "https://www.together.ai/",
+      "bucket": "paid"
+    },
+    {
+      "slug": "fireworks",
+      "name": "Fireworks AI",
+      "line": "Open models at speed",
+      "kind": "paid",
+      "licence": null,
+      "url": "https://fireworks.ai/",
+      "bucket": "paid"
+    },
+    {
+      "slug": "xai",
+      "name": "xAI",
+      "line": "Grok by API",
+      "kind": "paid",
+      "licence": null,
+      "url": "https://x.ai/api",
+      "bucket": "paid"
+    },
+    {
+      "slug": "ideogram",
+      "name": "Ideogram",
+      "line": "Images with text that reads",
+      "kind": "paid",
+      "licence": null,
+      "url": "https://ideogram.ai/",
+      "bucket": "paid"
+    },
+    {
+      "slug": "bfl",
+      "name": "Black Forest Labs",
+      "line": "The FLUX image and video models",
+      "kind": "paid",
+      "licence": null,
+      "url": "https://bfl.ai/",
+      "bucket": "paid"
+    },
+    {
+      "slug": "recraft",
+      "name": "Recraft",
+      "line": "Design-grade images and vectors",
+      "kind": "paid",
+      "licence": null,
+      "url": "https://www.recraft.ai/",
+      "bucket": "paid"
+    },
+    {
+      "slug": "stability",
+      "name": "Stability AI",
+      "line": "Stable Diffusion by API",
+      "kind": "paid",
+      "licence": null,
+      "url": "https://platform.stability.ai/",
+      "bucket": "paid"
+    },
+    {
+      "slug": "luma",
+      "name": "Luma",
+      "line": "Video generation, Ray3.2",
+      "kind": "paid",
+      "licence": null,
+      "url": "https://lumalabs.ai/",
+      "bucket": "paid"
+    },
+    {
+      "slug": "heygen",
+      "name": "HeyGen",
+      "line": "Avatar videos by API",
+      "kind": "paid",
+      "licence": null,
+      "url": "https://www.heygen.com/",
+      "bucket": "paid"
+    },
+    {
+      "slug": "deepgram",
+      "name": "Deepgram",
+      "line": "Speech to text, text to speech",
+      "kind": "paid",
+      "licence": null,
+      "url": "https://deepgram.com/",
+      "bucket": "paid"
+    },
+    {
+      "slug": "assemblyai",
+      "name": "AssemblyAI",
+      "line": "Speech to text and understanding",
+      "kind": "paid",
+      "licence": null,
+      "url": "https://www.assemblyai.com/",
+      "bucket": "paid"
+    },
+    {
+      "slug": "exa",
+      "name": "Exa",
+      "line": "Web search built for agents",
+      "kind": "paid",
+      "licence": null,
+      "url": "https://exa.ai/",
+      "bucket": "paid"
+    },
+    {
+      "slug": "tavily",
+      "name": "Tavily",
+      "line": "Search and extraction for agents",
+      "kind": "paid",
+      "licence": null,
+      "url": "https://www.tavily.com/",
+      "bucket": "paid"
+    },
+    {
+      "slug": "openwork",
+      "name": "OpenWork",
+      "line": "Your skills and MCPs in one place, for every agent",
+      "kind": "open-source",
+      "licence": "MIT",
+      "url": "https://github.com/different-ai/openwork",
+      "bucket": "free",
+      "install": {
+        "kind": "cask",
+        "cask": "openwork"
+      }
+    },
+    {
+      "slug": "open-design",
+      "name": "OpenDesign",
+      "line": "Design output as real files in your repo",
+      "kind": "open-source",
+      "licence": "Apache-2.0",
+      "url": "https://github.com/nexu-io/open-design",
+      "bucket": "free",
+      "install": {
+        "kind": "cask",
+        "cask": "open-design"
+      }
+    },
+    {
+      "slug": "unsloth-desktop",
+      "name": "Unsloth Desktop",
+      "line": "Fine-tune a model from a desktop app",
+      "kind": "open-source",
+      "licence": null,
+      "url": "https://unsloth.ai/docs/desktop",
+      "bucket": "free",
+      "install": {
+        "kind": "cask",
+        "cask": "unsloth"
+      }
+    },
+    {
+      "slug": "lobehub",
+      "name": "LobeHub",
+      "line": "A chat workspace you run yourself",
+      "kind": "self-host",
+      "licence": null,
+      "url": "https://github.com/lobehub/lobehub",
+      "bucket": "free",
+      "install": {
+        "kind": "cask",
+        "cask": "lobehub"
+      }
+    },
+    {
+      "slug": "palmier-pro",
+      "name": "Palmier Pro",
+      "line": "A Mac video editor built for AI, with its agent",
+      "kind": "open-source",
+      "licence": null,
+      "url": "https://github.com/palmier-io/palmier-pro",
+      "bucket": "free",
+      "install": {
+        "kind": "cask",
+        "cask": "palmier-pro"
+      }
+    },
+    {
+      "slug": "gstack",
+      "name": "gstack",
+      "line": "A stack of skills for Claude Code, one command",
+      "kind": "open-source",
+      "licence": "MIT",
+      "url": "https://github.com/garrytan/gstack",
+      "bucket": "free",
+      "install": {
+        "kind": "git",
+        "repo": "https://github.com/garrytan/gstack.git",
+        "dir": "~/.claude/skills/gstack",
+        "setup": "./setup",
+        "needs": [
+          "git",
+          "bun",
+          "claude"
+        ]
+      }
+    },
+    {
+      "slug": "magpie",
+      "name": "Magpie",
+      "line": "Saves links, screenshots and notes for you",
+      "kind": "just-launched",
+      "licence": null,
+      "url": "https://usemagpie.app/",
+      "bucket": "soon"
+    },
+    {
+      "slug": "qoder",
+      "name": "Qoder",
+      "line": "A coding agent; free tier with your own keys",
+      "kind": "just-launched",
+      "licence": null,
+      "url": "https://qoder.com/",
+      "bucket": "soon"
+    },
+    {
+      "slug": "qwenwork",
+      "name": "QwenWork",
+      "line": "Alibaba's work agent, international edition",
+      "kind": "just-launched",
+      "licence": null,
+      "url": "https://qwenwork.ai/",
+      "bucket": "soon"
+    },
+    {
+      "slug": "buzz",
+      "name": "Buzz",
+      "line": "Agents as members; every action signed and searchable",
+      "kind": "open-source",
+      "licence": "Apache-2.0",
+      "url": "https://buzz.xyz/",
+      "bucket": "soon"
+    },
+    {
+      "slug": "cloudflare-os",
+      "name": "Cloudflare OS",
+      "line": "Agents with zero standing access, run locally",
+      "kind": "open-source",
+      "licence": "Apache-2.0",
+      "url": "https://blog.cloudflare.com/cloudflare-os/",
+      "bucket": "soon"
+    }
+  ]
+}
