@@ -31,11 +31,9 @@ Free apps install from their upstream source with their own installer (a Homebre
 
 The catalogue refreshes once a day from opsfy.ai. `opsfy list --json` prints the catalogue as JSON. A valid cached catalogue or the bundled catalogue keeps listings available when the refresh fails. Only a successful, valid refresh creates or updates the cache.
 
-An app's cask or setup runs the upstream installer's code on your machine. The catalogue is trusted over TLS; a compromised catalogue could remain cached for up to 24 hours.
+An app's cask or setup runs the upstream installer's code on your machine. The default catalogue is trusted over TLS; a compromised catalogue could remain cached for up to 24 hours.
 
-The only thing opsfy sends home is one line per install: the app's name and whether it worked. `OPSFY_NO_COUNT=1` turns it off.
-
-The install count contains the app slug and success or failure. `opsfy ask` sends the words you supply to the wall, and `opsfy login --email` sends the address you supply to the waitlist. Catalogue refreshes request the public catalogue. Failed install counts are ignored.
+The install count contains the app slug and success or failure. `OPSFY_NO_COUNT=1` turns it off. `opsfy ask` sends the words you supply to the wall, and `opsfy login --email` sends the address you supply to the waitlist. Catalogue refreshes request the public catalogue. Failed install counts are ignored.
 
 Paid tools open by waitlist.
 
@@ -48,13 +46,14 @@ Paid tools open by waitlist.
 | `OPSFY_HOME` | Parent of `cache/tools.json`; defaults to `~/.opsfy`. |
 | `OPSFY_NO_COUNT=1` | Disable install counts. |
 | `OPSFY_CATALOG=<file>` | Use a local catalogue exclusively; a bad file is an error. |
-| `OPSFY_CATALOG_URL=<url>` | Replace the catalogue refresh address for testing or review. |
-| `OPSFY_DRY_RUN=1` | Print requests to stderr and send none; installer commands still run. |
+| `OPSFY_API_BASE=<url>` | Base for catalogue refreshes, install counts, asks and the waitlist. Unset or empty defaults to `https://opsfy.ai`; trailing slashes are ignored. Requires HTTPS, or HTTP on exactly `127.0.0.1`, `localhost` or `::1`, with an optional port. |
+| `OPSFY_CATALOG_URL=<url>` | Override the base for catalogue refreshes; the local catalogue file still takes priority. |
+| `OPSFY_DRY_RUN=1` | Print installer actions to stdout and requests to stderr; install nothing and send nothing. Normal refusal checks still apply. |
 | `OPSFY_PLATFORM=<darwin\|linux\|win32>` | Override the platform check for testing. |
 
 ## Development
 
-Run `npm test` from this package folder, or `node --test --test-reporter=tap test/cli.test.js` for TAP output. The tests use disposable homes, an isolated PATH, fake installers, and dry-run requests. They clean up their scratch folders and need no network or installed prerequisites.
+Run `npm test` from this package folder, or `node --test --test-reporter=tap test/cli.test.js` for TAP output. The tests use disposable homes, an isolated PATH, fake installers, stubbed fetch, and explicitly requested dry runs. They clean up their scratch folders and need no network or installed prerequisites.
 
 ## License
 

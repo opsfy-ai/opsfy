@@ -4,7 +4,7 @@
 const { version } = require("../package.json");
 const { load, find, BUCKETS, HEADINGS } = require("../lib/catalog.js");
 const { install } = require("../lib/install.js");
-const { ENDPOINTS, request } = require("../lib/api.js");
+const { ENDPOINTS, validateBase, request } = require("../lib/api.js");
 const { out, err } = require("../lib/output.js");
 
 function help() {
@@ -61,6 +61,13 @@ async function post(url, fields, success) {
 }
 
 async function main(argv) {
+  try {
+    validateBase();
+  } catch (error) {
+    err(error.message);
+    return 2;
+  }
+
   const [command, ...args] = argv;
   switch (command) {
     case undefined:
