@@ -1,6 +1,6 @@
 {
-  "name": "opsfy",
-  "version": "0.2.0",
+  "name": "@opsfy/cli",
+  "version": "0.2.1",
   "description": "One key for all your tools. Install free apps and call paid tools from one command.",
   "license": "MIT",
   "homepage": "https://opsfy.ai",

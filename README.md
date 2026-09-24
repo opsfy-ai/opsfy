@@ -7,10 +7,12 @@ https://opsfy.ai
 Requires Node.js 20 or newer. Install the command with:
 
 ```sh
-npm i -g opsfy
+npm i -g @opsfy/cli
 ```
 
 The same install works straight from this repo: `npm i -g opsfy-ai/opsfy`.
+
+Installed opsfy before 0.2.1? Remove the old one first: `npm uninstall -g opsfy`.
 
 Mac today; Windows and Linux next.
 
@@ -31,7 +33,7 @@ Free apps install from their upstream source with their own installer (a Homebre
 
 The catalogue refreshes once a day from opsfy.ai. `opsfy list --json` prints the catalogue as JSON. A valid cached catalogue or the bundled catalogue keeps listings available when the refresh fails. Only a successful, valid refresh creates or updates the cache.
 
-An app's cask or setup runs the upstream installer's code on your machine. The default catalogue is trusted over TLS; a compromised catalogue could remain cached for up to 24 hours.
+An app's cask or setup runs the upstream installer's code on your machine. The default catalogue is trusted over TLS; a compromised catalogue could remain cached for up to 24 hours, and for longer on a machine that cannot reach opsfy.ai.
 
 The install count contains the app slug and success or failure. `OPSFY_NO_COUNT=1` turns it off. `opsfy ask` sends the words you supply to the wall, and `opsfy login --email` sends the address you supply to the waitlist. Catalogue refreshes request the public catalogue. Failed install counts are ignored.
 

@@ -152,7 +152,7 @@ function noInstall(w, result) {
 test("help and version aliases work without loading a catalogue or creating a cache", (t) => {
   const w = world(t);
   const expected = [
-    "opsfy 0.2.0 · one key for all your tools · https://opsfy.ai",
+    "opsfy 0.2.1 · one key for all your tools · https://opsfy.ai",
     "",
     "  opsfy list                  the tools: free (install now), paid (waitlist), coming soon",
     "  opsfy install <app>         install a free app on this Mac, from its upstream source",
@@ -168,7 +168,7 @@ test("help and version aliases work without loading a catalogue or creating a ca
     check(w.run(args, { OPSFY_CATALOG: path.join(w.root, "absent") }), 0, expected, "");
   }
   for (const alias of ["--version", "-v", "version"]) {
-    check(w.run([alias]), 0, "0.2.0\n", "");
+    check(w.run([alias]), 0, "0.2.1\n", "");
   }
   assert.deepEqual(fs.readdirSync(w.home), []);
   assert.deepEqual(w.calls(), []);
@@ -352,7 +352,7 @@ test("malformed recipes still list but are refused before any installer or count
     const filename = w.catalog([tool({ install })]);
     check(w.run(["list"], { OPSFY_CATALOG: filename }), 0);
     const result = w.run(["install", "demo"], { OPSFY_CATALOG: filename });
-    check(result, 2, "Demo cannot be installed by this version of opsfy. Update it: npm i -g opsfy\n", "");
+    check(result, 2, "Demo cannot be installed by this version of opsfy. Update it: npm i -g @opsfy/cli\n", "");
     noInstall(w, result);
   }
 });
@@ -547,7 +547,7 @@ test("OPSFY_DRY_RUN preserves platform, recipe and prerequisite refusals", (t) =
     [["install", "openwork"], { OPSFY_PLATFORM: "linux" },
       "Mac today; Windows and Linux next. Nothing was changed.\n"],
     [["install", "demo"], { OPSFY_CATALOG: w.catalog([tool({ install: undefined })]) },
-      "Demo cannot be installed by this version of opsfy. Update it: npm i -g opsfy\n"],
+      "Demo cannot be installed by this version of opsfy. Update it: npm i -g @opsfy/cli\n"],
     [["install", "openwork"], {}, OPENWORK +
       "needs Homebrew. Install it from https://brew.sh, then run this again.\nstopped · nothing changed\n"],
     [["install", "gstack"], {}, GSTACK +
