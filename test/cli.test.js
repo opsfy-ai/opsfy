@@ -64,7 +64,7 @@ function world(t, fakes = ["brew", "git", "bun", "claude"]) {
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
   const home = path.join(root, "home");
   const bin = path.join(root, "bin");
-  const log = path.join(root, "calls.log");
+  const log = path.join(root, "calls.txt");
   fs.mkdirSync(home);
   fs.mkdirSync(bin);
   fs.writeFileSync(log, "");
@@ -84,13 +84,31 @@ function world(t, fakes = ["brew", "git", "bun", "claude"]) {
         FAKE_MARKER: "inherited-by-installers",
         FAKE_SETUP_SCRIPT: setupScript,
         OPSFY_CATALOG: BUNDLED,
+        OPSFY_API_BASE: "http://127.0.0.1:9",
         OPSFY_NO_COUNT: "1",
         OPSFY_PLATFORM: "darwin",
         ...extra,
       };
+      env.KSC_LEGACY_COMMAND = args[0] || "";
+      env.KSC_LEGACY_EXPECTED = JSON.stringify(env.KSC_EXPECT_PULLED === "1" && env.OPSFY_DRY_RUN !== "1"
+        ? [[env.OPSFY_API_BASE.replace(/\/+$/, "") + "/api/pulled", "GET"]] : []);
       const nodeArgs = [
         "-e",
-        'globalThis.fetch = async () => { process.stderr.write("unexpected fetch in test\\n"); throw new Error("unexpected fetch in test"); };\n' +
+        `globalThis.fetch = async (input, init) => {
+          const request = new Request(input, init);
+          const allowed = JSON.parse(process.env.KSC_LEGACY_EXPECTED || "[]");
+          if (!allowed.some(([url, method]) => request.url === url && request.method === method)) {
+            throw new Error("unexpected fetch in test");
+          }
+          const atURL = response => {
+            Object.defineProperty(response, "url", {value:request.url});
+            const clone = response.clone.bind(response);
+            response.clone = () => atURL(clone());
+            return response;
+          };
+          return atURL(new Response('{"pulled":[]}', {status:200,
+            headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store"}}));
+        };\n` +
         prelude + "\nprocess.argv = " + JSON.stringify([process.execPath, ENTRY, ...args]) +
           ";\nrequire(" + JSON.stringify(ENTRY) + ");",
       ];
@@ -112,6 +130,9 @@ function world(t, fakes = ["brew", "git", "bun", "claude"]) {
       const stderr = fs.readFileSync(stderrFile, "utf8");
       assert.ok(!stderr.includes("unexpected fetch in test"), stderr);
       return { ...result, stdout: fs.readFileSync(stdoutFile, "utf8"), stderr };
+    },
+    eligible(args, extra = {}, prelude = "") {
+      return this.run(args, { ...extra, KSC_EXPECT_PULLED: "1" }, prelude);
     },
     calls() {
       const calls = [];
@@ -152,7 +173,7 @@ function noInstall(w, result) {
 test("help and version aliases work without loading a catalogue or creating a cache", (t) => {
   const w = world(t);
   const expected = [
-    "opsfy 0.2.1 · one key for all your tools · https://opsfy.ai",
+    "opsfy 0.2.2 · one key for all your tools · https://opsfy.ai",
     "",
     "  opsfy list                  the tools: free (install now), paid (waitlist), coming soon",
     "  opsfy install <app>         install a free app on this Mac, from its upstream source",
@@ -168,7 +189,7 @@ test("help and version aliases work without loading a catalogue or creating a ca
     check(w.run(args, { OPSFY_CATALOG: path.join(w.root, "absent") }), 0, expected, "");
   }
   for (const alias of ["--version", "-v", "version"]) {
-    check(w.run([alias]), 0, "0.2.1\n", "");
+    check(w.run([alias]), 0, "0.2.2\n", "");
   }
   assert.deepEqual(fs.readdirSync(w.home), []);
   assert.deepEqual(w.calls(), []);
@@ -214,13 +235,13 @@ test("a local catalogue controls column widths and slug matches precede name mat
   check(w.run(["list"], extra), 0,
     "Free · install now · opsfy install <app>\n  abc  XYZ  A test app\n  xyz  B    A test app\n\n" +
     "Paid · by waitlist · opsfy login --email you@example.com\n\nComing soon\n", "");
-  check(w.run(["install", "XYZ"], extra), 0);
+  check(w.eligible(["install", "XYZ"], extra), 0);
   assert.deepEqual(w.calls(), [{ command: "brew", args: ["install", "--cask", "second"] }]);
 });
 
 test("cask output stays ordered around inherited child output and preserves its environment", (t) => {
   const w = world(t);
-  const result = w.run(["install", "OpenWork"], { FAKE_BREW_OUTPUT: "from the child" });
+  const result = w.eligible(["install", "OpenWork"], { FAKE_BREW_OUTPUT: "from the child" });
   check(result, 0, OPENWORK + "installing with Homebrew: brew install --cask openwork\n" +
     "from the child\nok · installed · OpenWork\n",
   "");
@@ -232,7 +253,7 @@ test("cask output stays ordered around inherited child output and preserves its 
 
 test("a case-insensitive name uses the catalogue's cask and the free licence fallback", (t) => {
   const w = world(t);
-  const result = w.run(["install", "uNsLoTh DeSkToP"]);
+  const result = w.eligible(["install", "uNsLoTh DeSkToP"]);
   check(result, 0, "Unsloth Desktop · free · from the upstream release · unsloth.ai/docs/desktop\n" +
     "installing with Homebrew: brew install --cask unsloth\nok · installed · Unsloth Desktop\n",
   "");
@@ -241,7 +262,7 @@ test("a case-insensitive name uses the catalogue's cask and the free licence fal
 
 test("a failed cask preserves the child status in its message", (t) => {
   const w = world(t);
-  check(w.run(["install", "openwork"], { FAKE_BREW_EXIT: "3" }), 1,
+  check(w.eligible(["install", "openwork"], { FAKE_BREW_EXIT: "3" }), 1,
     OPENWORK + "installing with Homebrew: brew install --cask openwork\nfailed · Homebrew exited 3\n",
     "");
   assert.equal(w.calls().length, 1);
@@ -250,7 +271,7 @@ test("a failed cask preserves the child status in its message", (t) => {
 test("install counts can be disabled for both success and failure", (t) => {
   const w = world(t);
   for (const code of ["0", "8"]) {
-    check(w.run(["install", "openwork"], { OPSFY_NO_COUNT: "1", FAKE_BREW_EXIT: code }),
+    check(w.eligible(["install", "openwork"], { OPSFY_NO_COUNT: "1", FAKE_BREW_EXIT: code }),
       code === "0" ? 0 : 1, undefined, "");
   }
   assert.equal(w.calls().length, 2);
@@ -263,7 +284,7 @@ test("missing, nonexecutable and directory-shaped prerequisites never run", (t) 
   for (const kind of ["absent", "file", "directory"]) {
     if (kind === "file") fs.writeFileSync(brew, fakeScripts.brew, { mode: 0o600 });
     if (kind === "directory") { fs.unlinkSync(brew); fs.mkdirSync(brew); }
-    const result = w.run(["install", "openwork"]);
+    const result = w.eligible(["install", "openwork"]);
     check(result, 2, expected, "");
     noInstall(w, result);
   }
@@ -276,15 +297,15 @@ test("executable symlinks qualify for Homebrew and all git prerequisites without
     fs.renameSync(path.join(w.bin, name), target);
     fs.symlinkSync(target, path.join(w.bin, name));
   }
-  check(w.run(["install", "openwork"]), 0);
-  check(w.run(["install", "gstack"]), 0);
+  check(w.eligible(["install", "openwork"]), 0);
+  check(w.eligible(["install", "gstack"]), 0);
   assert.deepEqual(w.calls().map((call) => call.command), ["brew", "git", "setup"]);
 });
 
 test("git installs clone once, run setup in the target, and do nothing on a second install", (t) => {
   const w = world(t);
   const target = path.join(w.home, ".claude/skills/gstack");
-  check(w.run(["install", "gstack"]), 0,
+  check(w.eligible(["install", "gstack"]), 0,
     GSTACK + "cloning into ~/.claude/skills/gstack and running its setup\nok · installed · gstack · ~/.claude/skills/gstack\n",
     "");
   assert.deepEqual(w.calls(), [
@@ -293,14 +314,14 @@ test("git installs clone once, run setup in the target, and do nothing on a seco
   ]);
   assert.equal(fs.readFileSync(w.log, "utf8").match(/MARKER=inherited-by-installers/g).length, 2);
   w.reset();
-  const again = w.run(["install", "gstack"]);
+  const again = w.eligible(["install", "gstack"]);
   check(again, 0, GSTACK + "already installed · gstack · ~/.claude/skills/gstack\n", "");
   noInstall(w, again);
 });
 
 test("a failed clone does not attempt setup", (t) => {
   const w = world(t);
-  check(w.run(["install", "gstack"], { FAKE_GIT_EXIT: "7" }), 1,
+  check(w.eligible(["install", "gstack"], { FAKE_GIT_EXIT: "7" }), 1,
     GSTACK + "cloning into ~/.claude/skills/gstack and running its setup\nfailed · git exited 7\n",
     "");
   assert.deepEqual(w.calls().map((call) => call.command), ["git"]);
@@ -308,7 +329,7 @@ test("a failed clone does not attempt setup", (t) => {
 
 test("a failed setup reports failure after the successful clone", (t) => {
   const w = world(t);
-  check(w.run(["install", "gstack"], { FAKE_SETUP_EXIT: "4" }), 1,
+  check(w.eligible(["install", "gstack"], { FAKE_SETUP_EXIT: "4" }), 1,
     GSTACK + "cloning into ~/.claude/skills/gstack and running its setup\nfailed · setup exited 4\n",
     "");
   assert.deepEqual(w.calls().map((call) => call.command), ["git", "setup"]);
@@ -317,7 +338,7 @@ test("a failed setup reports failure after the successful clone", (t) => {
 test("a git recipe without setup or needs requires only Git and clones without setup", (t) => {
   const w = world(t, ["git"]);
   const filename = w.catalog([tool({ install: { kind: "git", repo: "https://github.com/example/demo", dir: "~/.local/share/demo" } })]);
-  check(w.run(["install", "demo"], { OPSFY_CATALOG: filename }), 0,
+  check(w.eligible(["install", "demo"], { OPSFY_CATALOG: filename }), 0,
     "Demo · free · from the upstream repo · opsfy.ai/demo\ncloning into ~/.local/share/demo\n" +
     "ok · installed · Demo · ~/.local/share/demo\n",
     "");
@@ -327,12 +348,12 @@ test("a git recipe without setup or needs requires only Git and clones without s
 
 test("missing prerequisites are deduplicated, ordered and never probed", (t) => {
   const w = world(t, []);
-  const result = w.run(["install", "gstack"]);
+  const result = w.eligible(["install", "gstack"]);
   check(result, 2, GSTACK + "needs Git, Bun and Claude Code. Missing: Git (xcode-select --install), " +
     "Bun (brew install oven-sh/bun/bun), Claude Code (npm i -g @anthropic-ai/claude-code)\nstopped · nothing changed\n", "");
   noInstall(w, result);
   for (const name of ["git", "claude"]) fs.writeFileSync(path.join(w.bin, name), fakeScripts[name], { mode: 0o755 });
-  check(w.run(["install", "gstack"]), 2, GSTACK +
+  check(w.eligible(["install", "gstack"]), 2, GSTACK +
     "needs Git, Bun and Claude Code. Missing: Bun (brew install oven-sh/bun/bun)\nstopped · nothing changed\n", "");
   assert.deepEqual(w.calls(), []);
 });
@@ -485,7 +506,7 @@ test("geteuid root is refused before either recipe branch, including OPSFY_DRY_R
   const w = world(t);
   for (const slug of ["openwork", "gstack"]) {
     for (const dryRun of [undefined, "1"]) {
-      const result = w.run(["install", slug], { OPSFY_DRY_RUN: dryRun, OPSFY_NO_COUNT: "0" },
+      const result = w.run(["install", slug], { OPSFY_DRY_RUN: dryRun, OPSFY_NO_COUNT: "1" },
         "process.geteuid = () => 0;");
       check(result, 2, "opsfy never runs as root. Run it as your own user.\nstopped · nothing changed\n", "");
       noInstall(w, result);
@@ -497,11 +518,11 @@ test("geteuid root is refused before either recipe branch, including OPSFY_DRY_R
 test("signal deaths and processes that cannot start report status 1", (t) => {
   const w = world(t);
   const expected = OPENWORK + "installing with Homebrew: brew install --cask openwork\nfailed · Homebrew exited 1\n";
-  check(w.run(["install", "openwork"], { FAKE_SIGNAL: "brew" }), 1, expected, "");
+  check(w.eligible(["install", "openwork"], { FAKE_SIGNAL: "brew" }), 1, expected, "");
   assert.equal(w.calls().length, 1);
   w.reset();
   fs.writeFileSync(path.join(w.bin, "brew"), "#!/no-such-opsfy-interpreter\n", { mode: 0o755 });
-  check(w.run(["install", "openwork"]), 1, expected, "");
+  check(w.eligible(["install", "openwork"]), 1, expected, "");
   assert.deepEqual(w.calls(), []);
 });
 
@@ -509,7 +530,7 @@ test("OPSFY_DRY_RUN previews a cask without installers, home changes or install 
   const w = world(t);
   const result = w.run(["install", "openwork"], { OPSFY_DRY_RUN: "1", OPSFY_NO_COUNT: "0" });
   check(result, 0, OPENWORK + "dry-run · would run · brew install --cask openwork\n" +
-    "dry-run · nothing was installed and nothing was sent\n", "");
+    "dry-run · nothing was installed and nothing was sent\n", "dry-run: GET http://127.0.0.1:9/api/pulled\n");
   noInstall(w, result);
   assert.deepEqual(fs.readdirSync(w.home), []);
 });
@@ -520,7 +541,7 @@ test("OPSFY_DRY_RUN previews a git clone and setup without creating the target o
   check(result, 0, GSTACK +
     "dry-run · would clone · https://github.com/garrytan/gstack.git into ~/.claude/skills/gstack\n" +
     "dry-run · would run · ~/.claude/skills/gstack/setup\n" +
-    "dry-run · nothing was installed and nothing was sent\n", "");
+    "dry-run · nothing was installed and nothing was sent\n", "dry-run: GET http://127.0.0.1:9/api/pulled\n");
   noInstall(w, result);
   assert.deepEqual(fs.readdirSync(w.home), []);
 });
@@ -535,7 +556,7 @@ test("OPSFY_DRY_RUN does not promise setup when the git recipe has none", (t) =>
   });
   check(result, 0, "Demo · free · from the upstream repo · opsfy.ai/demo\n" +
     "dry-run · would clone · https://github.com/example/demo into ~/.local/share/demo\n" +
-    "dry-run · nothing was installed and nothing was sent\n", "");
+    "dry-run · nothing was installed and nothing was sent\n", "dry-run: GET http://127.0.0.1:9/api/pulled\n");
   noInstall(w, result);
   assert.deepEqual(fs.readdirSync(w.home), []);
 });
@@ -556,44 +577,35 @@ test("OPSFY_DRY_RUN preserves platform, recipe and prerequisite refusals", (t) =
   ];
   for (const [args, overrides, expected] of cases) {
     const result = w.run(args, { ...extra, ...overrides });
-    check(result, 2, expected, "");
+    const gets = !overrides.OPSFY_PLATFORM && !overrides.OPSFY_CATALOG;
+    check(result, 2, expected, gets ? "dry-run: GET http://127.0.0.1:9/api/pulled\n" : "");
     noInstall(w, result);
   }
   assert.deepEqual(fs.readdirSync(w.home), []);
 });
 
-test("install counts send each slug and outcome once to OPSFY_API_BASE through stubbed fetch", (t) => {
+test("install counts send each slug and outcome once using a dry count at the seam", (t) => {
   const cases = [
-    ["openwork", {}, true],
-    ["openwork", { FAKE_BREW_EXIT: "3" }, false],
-    ["gstack", {}, true],
-    ["gstack", { FAKE_GIT_EXIT: "7" }, false],
+    ["openwork", {}, true], ["openwork", { FAKE_BREW_EXIT: "3" }, false],
+    ["gstack", {}, true], ["gstack", { FAKE_GIT_EXIT: "7" }, false],
     ["gstack", { FAKE_SETUP_EXIT: "4" }, false],
   ];
-  for (const [base, endpoint] of [
-    [undefined, "https://opsfy.ai/api/install"],
-    ["https://staging.opsfy.ai///", "https://staging.opsfy.ai/api/install"],
-  ]) {
+  for (const base of ["http://127.0.0.1:9", "http://localhost:9///"]) {
     for (const [slug, extra, ok] of cases) {
       const w = world(t);
-      const requests = path.join(w.root, "requests.json");
       const prelude = `
-        const sent = [];
-        globalThis.fetch = async (url, options) => {
-          sent.push({ url: String(url), method: options.method, body: options.body });
-          return { ok: true };
+        const api = require(${JSON.stringify(path.resolve(__dirname, "../lib/api.js"))});
+        const originalCount = api.count;
+        api.count = async (...args) => {
+          process.env.OPSFY_DRY_RUN = "1";
+          process.env.OPSFY_NO_COUNT = "0";
+          try { await originalCount(...args); }
+          finally { delete process.env.OPSFY_DRY_RUN; process.env.OPSFY_NO_COUNT = "1"; }
         };
-        process.on("exit", () => {
-          require("node:fs").writeFileSync(process.env.FAKE_FETCH_LOG, JSON.stringify(sent));
-        });
       `;
-      const result = w.run(["install", slug], {
-        OPSFY_NO_COUNT: "0", OPSFY_API_BASE: base, FAKE_FETCH_LOG: requests, ...extra,
-      }, prelude);
-      check(result, ok ? 0 : 1, undefined, "");
-      assert.deepEqual(JSON.parse(fs.readFileSync(requests, "utf8")), [{
-        url: endpoint, method: "POST", body: `tool=${slug}&ok=${ok ? "1" : "0"}`,
-      }]);
+      const result = w.eligible(["install", slug], { OPSFY_API_BASE: base, ...extra }, prelude);
+      check(result, ok ? 0 : 1, undefined,
+        `dry-run: POST ${base.replace(/\/+$/, "")}/api/install tool=${slug}&ok=${ok ? "1" : "0"}\n`);
     }
   }
 });
@@ -653,7 +665,7 @@ test("OPSFY_API_BASE rejects unsafe and malformed URLs before dispatching every 
   for (const args of commands) {
     check(w.run(args, {
       OPSFY_API_BASE: "http://evil.example", OPSFY_CATALOG: path.join(w.root, "absent"),
-      OPSFY_NO_COUNT: "0",
+      OPSFY_NO_COUNT: "1", OPSFY_DRY_RUN: "1",
     }), 2, "", "OPSFY_API_BASE must be https, or http on localhost: http://evil.example\n");
   }
   assert.deepEqual(w.calls(), []);

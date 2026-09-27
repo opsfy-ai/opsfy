@@ -35,7 +35,7 @@ The catalogue refreshes once a day from opsfy.ai. `opsfy list --json` prints the
 
 An app's cask or setup runs the upstream installer's code on your machine. The default catalogue is trusted over TLS; a compromised catalogue could remain cached for up to 24 hours, and for longer on a machine that cannot reach opsfy.ai.
 
-The install count contains the app slug and success or failure. `OPSFY_NO_COUNT=1` turns it off. `opsfy ask` sends the words you supply to the wall, and `opsfy login --email` sends the address you supply to the waitlist. Catalogue refreshes request the public catalogue. Failed install counts are ignored.
+The install count contains the app slug and success or failure. Before it installs anything, `opsfy install` asks opsfy.ai for its list of pulled apps and checks it on your Mac. It sends nothing about the app. If opsfy.ai does not answer clearly, it installs nothing. `OPSFY_NO_COUNT=1` turns it off. `opsfy ask` sends the words you supply to the wall, and `opsfy login --email` sends the address you supply to the waitlist. Catalogue refreshes request the public catalogue. Failed install counts are ignored.
 
 Paid tools open by waitlist.
 
@@ -48,7 +48,7 @@ Paid tools open by waitlist.
 | `OPSFY_HOME` | Parent of `cache/tools.json`; defaults to `~/.opsfy`. |
 | `OPSFY_NO_COUNT=1` | Disable install counts. |
 | `OPSFY_CATALOG=<file>` | Use a local catalogue exclusively; a bad file is an error. |
-| `OPSFY_API_BASE=<url>` | Base for catalogue refreshes, install counts, asks and the waitlist. Unset or empty defaults to `https://opsfy.ai`; trailing slashes are ignored. Requires HTTPS, or HTTP on exactly `127.0.0.1`, `localhost` or `::1`, with an optional port. |
+| `OPSFY_API_BASE=<url>` | Base for catalogue refreshes, the pulled-app check, install counts, asks and the waitlist. Unset or empty defaults to `https://opsfy.ai`; trailing slashes are ignored. Requires HTTPS, or HTTP on exactly `127.0.0.1`, `localhost` or `::1`, with an optional port. |
 | `OPSFY_CATALOG_URL=<url>` | Override the base for catalogue refreshes; the local catalogue file still takes priority. |
 | `OPSFY_DRY_RUN=1` | Print installer actions to stdout and requests to stderr; install nothing and send nothing. Normal refusal checks still apply. |
 | `OPSFY_PLATFORM=<darwin\|linux\|win32>` | Override the platform check for testing. |
