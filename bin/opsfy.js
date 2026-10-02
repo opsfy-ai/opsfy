@@ -11,12 +11,20 @@ function help() {
   [
     `opsfy ${version} · one key for all your tools · https://opsfy.ai`,
     "",
-    "  opsfy list                  the tools: free (install now), paid (waitlist), coming soon",
+    "  opsfy list                  the tools: free (install now), paid (not open yet), coming soon",
     "  opsfy install <app>         install a free app on this Mac, from its upstream source",
     "  opsfy ask <tool>            ask for a tool; it shows on the wall at opsfy.ai",
-    "  opsfy login                 get your key (paid tools open by waitlist)",
-    "  opsfy call <tool> ...       call a paid tool off your balance",
-    "  opsfy logs                  your calls, priced",
+    "  opsfy login                 log in with your email and a code",
+    "  opsfy key                   check your key; shows only its last four characters",
+    "  opsfy key rotate            replace your key with a new one",
+    "  opsfy logout                log out; your key stops working",
+    "  opsfy topup [amount]        add money to your balance on a Stripe page",
+    "  opsfy topup wait <id>       wait until a top-up is paid, cancelled or expired",
+    "  opsfy topup status <id>     a top-up's state now",
+    "  opsfy call <tool> ...       call a paid tool off your balance (not open yet)",
+    "  opsfy logs [--json]         your balance and paid top-ups",
+    "",
+    "  --json                      one JSON answer for an agent, for each topup command",
     "",
     "Mac today; Windows and Linux next. opsfy never runs as root.",
   ].forEach((line) => out(line));
@@ -26,7 +34,7 @@ function refusal(tool, argument) {
   if (!tool) {
     out(`${argument} is not in the catalogue. Ask for it: opsfy ask ${argument}`);
   } else if (tool.bucket === "paid") {
-    out(`${tool.name} is a paid tool. Paid tools open by waitlist: opsfy login --email you@example.com`);
+    out(`${tool.name} is a paid tool. Paid tools are not open yet.`);
   } else if (tool.bucket === "soon") {
     out(`${tool.name} is coming soon.`);
   } else {
@@ -61,6 +69,15 @@ async function post(url, fields, success) {
 }
 
 async function main(argv) {
+  const [command, ...args] = argv;
+  if (["login", "logout", "key"].includes(command)) {
+    return require("../lib/auth.js").run(command, args);
+  }
+
+  if (["topup", "logs"].includes(command)) {
+    return require("../lib/wallet.js").run(command, args);
+  }
+
   try {
     validateBase();
   } catch (error) {
@@ -68,7 +85,6 @@ async function main(argv) {
     return 2;
   }
 
-  const [command, ...args] = argv;
   switch (command) {
     case undefined:
     case "help":
@@ -113,23 +129,6 @@ async function main(argv) {
       return post(ENDPOINTS.tool, { tool: name }, `ok · asked for ${name} · on the wall at https://opsfy.ai`);
     }
 
-    case "login": {
-      if (!args.length) {
-        out("Keys open with the paid tools, by waitlist. Join it: opsfy login --email you@example.com");
-        return 0;
-      }
-      if (args.length !== 2 || args[0] !== "--email") {
-        err("usage: opsfy login [--email you@example.com]");
-        return 2;
-      }
-      const address = args[1];
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) {
-        out(`that is not an email address: ${address}`);
-        return 2;
-      }
-      return post(ENDPOINTS.key, { email: address }, `ok · ${address} is on the waitlist`);
-    }
-
     case "call": {
       if (!args.length) {
         err("usage: opsfy call <tool> ...");
@@ -139,10 +138,6 @@ async function main(argv) {
       if (!refusal(tool, args[0])) out(`${tool.name} is a free app: opsfy install ${tool.slug}`);
       return 2;
     }
-
-    case "logs":
-      out("No key yet. Keys open with the paid tools, by waitlist.");
-      return 0;
 
     default:
       err(`unknown command: ${command}`);

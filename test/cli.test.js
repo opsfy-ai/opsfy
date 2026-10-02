@@ -14,6 +14,7 @@ const path = require("node:path");
 const os = require("node:os");
 const { spawnSync } = require("node:child_process");
 
+Date.now = () => 1790596800000;
 const ENTRY = path.resolve(__dirname, "../bin/opsfy.js");
 const BUNDLED = path.resolve(__dirname, "../catalog.json");
 const bundled = require("../catalog.json");
@@ -78,8 +79,11 @@ function world(t, fakes = ["brew", "git", "bun", "claude"]) {
     run(args, extra = {}, prelude = "") {
       const env = {
         HOME: home,
+        OPSFY_HOME: path.join(home, ".opsfy"),
         PATH: bin,
         TMPDIR: root,
+        NODE_OPTIONS: process.env.WLC_NODE_OPTIONS,
+        WLC_READ_ROOT: process.env.WLC_READ_ROOT,
         FAKE_LOG: log,
         FAKE_MARKER: "inherited-by-installers",
         FAKE_SETUP_SCRIPT: setupScript,
@@ -94,7 +98,9 @@ function world(t, fakes = ["brew", "git", "bun", "claude"]) {
         ? [[env.OPSFY_API_BASE.replace(/\/+$/, "") + "/api/pulled", "GET"]] : []);
       const nodeArgs = [
         "-e",
-        `globalThis.fetch = async (input, init) => {
+        `Date.now = () => 1790596800000; Math.random = () => 0.3141592653589793;
+        require("node:crypto").randomBytes = n => Buffer.alloc(n, 73);
+        globalThis.fetch = async (input, init) => {
           const request = new Request(input, init);
           const allowed = JSON.parse(process.env.KSC_LEGACY_EXPECTED || "[]");
           if (!allowed.some(([url, method]) => request.url === url && request.method === method)) {
@@ -172,24 +178,12 @@ function noInstall(w, result) {
 
 test("help and version aliases work without loading a catalogue or creating a cache", (t) => {
   const w = world(t);
-  const expected = [
-    "opsfy 0.2.2 · one key for all your tools · https://opsfy.ai",
-    "",
-    "  opsfy list                  the tools: free (install now), paid (waitlist), coming soon",
-    "  opsfy install <app>         install a free app on this Mac, from its upstream source",
-    "  opsfy ask <tool>            ask for a tool; it shows on the wall at opsfy.ai",
-    "  opsfy login                 get your key (paid tools open by waitlist)",
-    "  opsfy call <tool> ...       call a paid tool off your balance",
-    "  opsfy logs                  your calls, priced",
-    "",
-    "Mac today; Windows and Linux next. opsfy never runs as root.",
-    "",
-  ].join("\n");
+  const expected = "opsfy 0.4.0 · one key for all your tools · https://opsfy.ai\n\n  opsfy list                  the tools: free (install now), paid (not open yet), coming soon\n  opsfy install <app>         install a free app on this Mac, from its upstream source\n  opsfy ask <tool>            ask for a tool; it shows on the wall at opsfy.ai\n  opsfy login                 log in with your email and a code\n  opsfy key                   check your key; shows only its last four characters\n  opsfy key rotate            replace your key with a new one\n  opsfy logout                log out; your key stops working\n  opsfy topup [amount]        add money to your balance on a Stripe page\n  opsfy topup wait <id>       wait until a top-up is paid, cancelled or expired\n  opsfy topup status <id>     a top-up's state now\n  opsfy call <tool> ...       call a paid tool off your balance (not open yet)\n  opsfy logs [--json]         your balance and paid top-ups\n\n  --json                      one JSON answer for an agent, for each topup command\n\nMac today; Windows and Linux next. opsfy never runs as root.\n";
   for (const args of [[], ["help"], ["--help"], ["-h"]]) {
     check(w.run(args, { OPSFY_CATALOG: path.join(w.root, "absent") }), 0, expected, "");
   }
   for (const alias of ["--version", "-v", "version"]) {
-    check(w.run([alias]), 0, "0.2.2\n", "");
+    check(w.run([alias]), 0, "0.4.0\n", "");
   }
   assert.deepEqual(fs.readdirSync(w.home), []);
   assert.deepEqual(w.calls(), []);
@@ -202,9 +196,9 @@ test("unknown commands and missing arguments use stderr and exit 2 without reque
     [["install"], "usage: opsfy install <app>\n"],
     [["ask"], "usage: opsfy ask <tool>\n"],
     [["call"], "usage: opsfy call <tool> ...\n"],
-    [["login", "--email"], "usage: opsfy login [--email you@example.com]\n"],
-    [["login", "someone@somewhere.test"], "usage: opsfy login [--email you@example.com]\n"],
-    [["login", "--email", "a@b.co", "extra"], "usage: opsfy login [--email you@example.com]\n"],
+    [["login", "--email"], "usage: opsfy login [--email you@example.com] [--code 123456]\n"],
+    [["login", "someone@somewhere.test"], "usage: opsfy login [--email you@example.com] [--code 123456]\n"],
+    [["login", "--email", "a@b.co", "extra"], "usage: opsfy login [--email you@example.com] [--code 123456]\n"],
   ];
   for (const [args, stderr] of cases) check(w.run(args), 2, "", stderr);
   assert.deepEqual(w.calls(), []);
@@ -218,7 +212,7 @@ test("the bundled list keeps bucket order and JSON preserves all catalogue field
   const groups = result.stdout.trimEnd().split("\n\n");
   assert.equal(groups.length, 3);
   assert.equal(groups[0].split("\n")[0], "Free · install now · opsfy install <app>");
-  assert.equal(groups[1].split("\n")[0], "Paid · by waitlist · opsfy login --email you@example.com");
+  assert.equal(groups[1].split("\n")[0], "Paid · not open yet");
   assert.equal(groups[2].split("\n")[0], "Coming soon");
   assert.deepEqual(groups.map((group) => group.split("\n").length - 1), [6, 20, 5]);
   assert.ok(groups[0].startsWith("Free · install now · opsfy install <app>\n  openwork         OpenWork           Your skills and MCPs in one place, for every agent\n"));
@@ -234,7 +228,7 @@ test("a local catalogue controls column widths and slug matches precede name mat
   const extra = { OPSFY_CATALOG: filename };
   check(w.run(["list"], extra), 0,
     "Free · install now · opsfy install <app>\n  abc  XYZ  A test app\n  xyz  B    A test app\n\n" +
-    "Paid · by waitlist · opsfy login --email you@example.com\n\nComing soon\n", "");
+    "Paid · not open yet\n\nComing soon\n", "");
   check(w.eligible(["install", "XYZ"], extra), 0);
   assert.deepEqual(w.calls(), [{ command: "brew", args: ["install", "--cask", "second"] }]);
 });
@@ -382,7 +376,7 @@ test("unknown, paid and coming-soon installs print their exact refusal without c
   const w = world(t);
   const cases = [
     ["missing", "missing is not in the catalogue. Ask for it: opsfy ask missing\n"],
-    ["elevenlabs", "ElevenLabs is a paid tool. Paid tools open by waitlist: opsfy login --email you@example.com\n"],
+    ["elevenlabs", "ElevenLabs is a paid tool. Paid tools are not open yet.\n"],
     ["magpie", "Magpie is coming soon.\n"],
   ];
   for (const [name, output] of cases) {
@@ -478,28 +472,58 @@ test("ask joins and encodes words, accepts 120 characters, and refuses 121 unsen
 
 test("login validates addresses and posts only the encoded waitlist field", (t) => {
   const w = world(t);
-  const extra = { OPSFY_DRY_RUN: "1", OPSFY_API_BASE: "https://opsfy.ai" };
-  check(w.run(["login"], extra), 0, "Keys open with the paid tools, by waitlist. Join it: opsfy login --email you@example.com\n", "");
-  check(w.run(["login", "--email", "a+b@c.co"], extra), 0, "ok · a+b@c.co is on the waitlist\n",
-    "dry-run: POST https://opsfy.ai/api/key email=a%2Bb%40c.co\n");
-  for (const address of ["nope", "@b.co", "a b@c.co", "a@b", "a@b@c.co"]) {
-    check(w.run(["login", "--email", address], extra), 2, `that is not an email address: ${address}\n`, "");
-  }
+  check(w.run(["login"]), 2, "", "run opsfy login --email you@example.com to log in\n");
+  check(w.run(["login", "--email", "a+b@c.co", "--code", "123456"], { OPSFY_DRY_RUN: "1" }),
+    2, "", "dry-run · login, logout and key do not run in a dry run\n");
   assert.deepEqual(fs.readdirSync(w.home), []);
+  for (const address of ["nope", "@b.co", "a b@c.co", "a@b", "a@b@c.co"]) {
+    check(w.run(["login", "--email", address]), 2, "", "enter a valid email address\n");
+  }
+  const reply = `
+    globalThis.fetch = async (input, init) => {
+      const request = new Request(input, init);
+      const fields = [...new URLSearchParams(await request.text())];
+      const verify = request.url.endsWith("/api/login");
+      const expected = verify
+        ? [["email", "a+b@c.co"], ["code", "123456"], ["key_fingerprint",
+          require("node:crypto").createHash("sha256").update("opsfy_sk_" + "49".repeat(32)).digest("hex")]]
+        : [["email", "a+b@c.co"]];
+      if (request.url !== "http://127.0.0.1:9/api/" + (verify ? "login" : "login-code") ||
+          request.method !== "POST" || request.headers.has("authorization") ||
+          request.headers.get("content-type") !== "application/x-www-form-urlencoded" ||
+          JSON.stringify(fields) !== JSON.stringify(expected)) throw new Error("auth request contract differed");
+      const body = verify ? {ok:true, email:"a+b@c.co", key_fingerprint:expected[2][1]} : {ok:true, expires_in:600};
+      const response = new Response(JSON.stringify(body), {status:verify ? 200 : 202,
+        headers:{"content-type":"application/json; charset=utf-8", "cache-control":"no-store"}});
+      Object.defineProperty(response, "url", {value:request.url});
+      return response;
+    };
+  `;
+  check(w.run(["login", "--email", " A+B@C.CO "], {}, reply), 0,
+    "Code sent to a+b@c.co. It works for 10 minutes.\n", "");
+  const directory = path.join(w.home, ".opsfy");
+  assert.equal(fs.existsSync(path.join(directory, "key")), false);
+  check(w.run(["login", "--code", "123-456", "--email", " A+B@C.CO "], {}, reply), 0,
+    "ok · logged in as a+b@c.co · your key is saved in ~/.opsfy/\n", "");
+  assert.deepEqual(fs.readdirSync(directory).sort(), ["account", "key"]);
+  assert.equal(fs.statSync(directory).mode & 0o777, 0o700);
+  assert.equal(fs.statSync(path.join(directory, "key")).mode & 0o777, 0o600);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(directory, "account"), "utf8")).email, "a+b@c.co");
+  assert.deepEqual(w.calls(), []);
 });
 
 test("call uses the part before the first dot and logs makes no request", (t) => {
   const w = world(t);
   const cases = [
-    ["elevenlabs.speak", "ElevenLabs is a paid tool. Paid tools open by waitlist: opsfy login --email you@example.com\n"],
+    ["elevenlabs.speak", "ElevenLabs is a paid tool. Paid tools are not open yet.\n"],
     ["OpenWork.run", "OpenWork is a free app: opsfy install openwork\n"],
     ["qoder.run", "Qoder is coming soon.\n"],
     ["missing.run", "missing.run is not in the catalogue. Ask for it: opsfy ask missing.run\n"],
   ];
   for (const [name, output] of cases) check(w.run(["call", name, "payload"]), 2, output, "");
-  check(w.run(["logs"]), 0, "No key yet. Keys open with the paid tools, by waitlist.\n", "");
+  check(w.run(["logs"]), 2, "", "you are not logged in on this computer · run opsfy login to log in\n");
   assert.deepEqual(w.calls(), []);
-  assert.deepEqual(fs.readdirSync(w.home), []);
+  assert.deepEqual(fs.readdirSync(w.home), [".opsfy"]);
 });
 
 test("geteuid root is refused before either recipe branch, including OPSFY_DRY_RUN", (t) => {
@@ -618,9 +642,8 @@ test("OPSFY_API_BASE moves catalogue, ask and login endpoints and trims trailing
   check(w.run(["ask", "Sheets"], extra), 0,
     "ok · asked for Sheets · on the wall at https://opsfy.ai\n",
     "dry-run: POST https://staging.opsfy.ai/api/tool tool=Sheets\n");
-  check(w.run(["login", "--email", "a+b@c.co"], extra), 0,
-    "ok · a+b@c.co is on the waitlist\n",
-    "dry-run: POST https://staging.opsfy.ai/api/key email=a%2Bb%40c.co\n");
+  check(w.run(["login", "--email", "a+b@c.co"], extra), 2, "",
+    "dry-run · login, logout and key do not run in a dry run\n");
   assert.deepEqual(fs.readdirSync(w.home), []);
   assert.deepEqual(w.calls(), []);
 });
@@ -666,7 +689,9 @@ test("OPSFY_API_BASE rejects unsafe and malformed URLs before dispatching every 
     check(w.run(args, {
       OPSFY_API_BASE: "http://evil.example", OPSFY_CATALOG: path.join(w.root, "absent"),
       OPSFY_NO_COUNT: "1", OPSFY_DRY_RUN: "1",
-    }), 2, "", "OPSFY_API_BASE must be https, or http on localhost: http://evil.example\n");
+    }), 2, "", ["login", "logout", "key", "logs"].includes(args[0])
+      ? "OPSFY_API_BASE must be https, or http on localhost, with no username, password, query or fragment\n"
+      : "OPSFY_API_BASE must be https, or http on localhost: http://evil.example\n");
   }
   assert.deepEqual(w.calls(), []);
   assert.deepEqual(fs.readdirSync(w.home), []);
@@ -686,3 +711,5 @@ test("OPSFY_CATALOG beats OPSFY_CATALOG_URL, which beats OPSFY_API_BASE", (t) =>
     JSON.stringify(bundled, null, 2) + "\n", "dry-run: GET https://staging.opsfy.ai/tools.json\n");
   assert.deepEqual(fs.readdirSync(w.home), []);
 });
+
+require("./wallet.test.js");
