@@ -45,11 +45,11 @@ The catalogue refreshes once a day from opsfy.ai. `opsfy list --json` prints the
 
 An app's cask or setup runs the upstream installer's code on your machine. The default catalogue is trusted over TLS; a compromised catalogue could remain cached for up to 24 hours, and for longer on a machine that cannot reach opsfy.ai.
 
-The install count contains the app slug and success or failure; `OPSFY_NO_COUNT=1` turns the count off. Before it installs anything, `opsfy install` asks opsfy.ai for its list of pulled apps and checks it on your Mac. It sends nothing about the app, and if opsfy.ai does not answer clearly, it installs nothing. `opsfy ask` sends the words you supply to the wall, and `opsfy login` sends the email you give to opsfy.ai, which emails you a code. Catalogue refreshes request the public catalogue. Failed install counts are ignored.
+The install count contains the app slug, success or failure, and a random install id that opsfy makes once and keeps in `~/.opsfy/id`; nothing about your machine goes into it. `OPSFY_NO_COUNT=1` turns the count off, id included, and deleting `~/.opsfy/id` makes a new one next time. Before it installs anything, `opsfy install` asks opsfy.ai for its list of pulled apps and checks it on your Mac. It sends nothing about the app, and if opsfy.ai does not answer clearly, it installs nothing. `opsfy ask` sends the words you supply to the wall, and `opsfy login` sends the email you give to opsfy.ai, which emails you a code. Catalogue refreshes request the public catalogue. Failed install counts are ignored.
 
 Paid tools are not open yet.
 
-`opsfy call` explains whether a tool is paid, free, or coming soon. It does not make paid calls.
+`opsfy call` explains whether a tool is paid, free or self-serve. It does not make paid calls.
 
 ## Logging in
 
@@ -69,13 +69,17 @@ In a terminal, `opsfy topup [amount]` prints and opens the payment page, then wa
 
 Top-ups and logs use `OPSFY_API_KEY` when it is nonempty, otherwise the saved key. Paid tools are not open yet.
 
+## JSON for agents
+
+Add `--json` to any command for one line of JSON instead of sentences. Every answer starts with `"ok"`: `true` when the command did its job, `false` with an `"error"` code and the sentence a person would see as `"message"`. The exit codes stay the same. With `--json`, opsfy never asks a question and never opens a browser; an app's own installer prints to standard error and may still ask its own questions.
+
 ## Settings
 
 | Variable | Effect |
 | --- | --- |
-| `OPSFY_HOME` | Where your key and `cache/tools.json` are kept; defaults to `~/.opsfy`. |
+| `OPSFY_HOME` | Where your key, the install id and `cache/tools.json` are kept; defaults to `~/.opsfy`. |
 | `OPSFY_API_KEY` | Use this key instead of the saved one, for example on a server. |
-| `OPSFY_NO_COUNT=1` | Disable install counts. |
+| `OPSFY_NO_COUNT=1` | Disable install counts; no install id is made or sent. |
 | `OPSFY_CATALOG=<file>` | Use a local catalogue exclusively; a bad file is an error. |
 | `OPSFY_API_BASE=<url>` | Base for catalogue refreshes, the pulled-app check, install counts, asks, logins, top-ups and logs. Unset or empty defaults to `https://opsfy.ai`; trailing slashes are ignored. Requires HTTPS, or HTTP on exactly `127.0.0.1`, `localhost` or `::1`, with an optional port. |
 | `OPSFY_CATALOG_URL=<url>` | Override the base for catalogue refreshes; the local catalogue file still takes priority. |

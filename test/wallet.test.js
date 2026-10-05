@@ -161,7 +161,11 @@ if (require.main === module && process.argv[2] === "--fixture") {
   test("wallet malformed environment keys never fall back to the saved key", t => {
     const run = world(t);
     for (const args of [["topup", "25"], ["logs"], ["logs", "--json"]]) {
-      check(run(args, [], { environment: " " }), 2, "", "OPSFY_API_KEY is set · unset it, then try again\n");
+      const json = args.includes("--json");
+      const message = "OPSFY_API_KEY is set · unset it, then try again";
+      check(run(args, [], { environment: " " }), 2,
+        json ? JSON.stringify({ ok: false, error: "api_key_env_set", message }) + "\n" : "",
+        json ? "" : message + "\n");
     }
   });
 
@@ -170,7 +174,10 @@ if (require.main === module && process.argv[2] === "--fixture") {
     for (const args of [["topup", "25"], ["logs"], ["logs", "--json"]]) {
       const reply = args[0] === "topup" ? creation() : page();
       const result = run(args, [{ ...reply, interrupt: true }]);
-      check(result, 1, "", args[0] === "topup" ? unavailable : storage);
+      const json = args.includes("--json"), message = args[0] === "topup" ? unavailable : storage;
+      check(result, 1,
+        json ? JSON.stringify({ ok: false, error: "balance_unavailable", message: message.trimEnd() }) + "\n" : "",
+        json ? "" : message);
       assert.equal(result.observation.requests.length, 1);
       assert.equal(result.observation.aborted, 1);
     }
@@ -180,7 +187,10 @@ if (require.main === module && process.argv[2] === "--fixture") {
     const run = world(t), first = Array.from({ length: 50 }, (_, i) => row(i));
     for (const args of [["logs"], ["logs", "--json"]]) {
       const result = run(args, [page(first, "100", 125000), { ...page([row(51)], null, 127500), interrupt: true }]);
-      check(result, 1, "", storage);
+      const json = args.includes("--json");
+      check(result, 1,
+        json ? JSON.stringify({ ok: false, error: "balance_unavailable", message: storage.trimEnd() }) + "\n" : "",
+        json ? "" : storage);
       assert.equal(result.observation.requests.length, 2);
       assert.equal(result.observation.aborted, 1);
     }
@@ -192,7 +202,10 @@ if (require.main === module && process.argv[2] === "--fixture") {
     const second = Array.from({ length: 50 }, (_, i) => row(i + 50));
     for (const args of [["logs"], ["logs", "--json"]]) {
       const result = run(args, [page(first, "200", 250000), page(second, "100", 250000), page([row(0)])]);
-      check(result, 1, "", storage);
+      const json = args.includes("--json");
+      check(result, 1,
+        json ? JSON.stringify({ ok: false, error: "balance_unavailable", message: storage.trimEnd() }) + "\n" : "",
+        json ? "" : storage);
       assert.equal(result.observation.requests.length, 3);
     }
   });
@@ -207,8 +220,8 @@ if (require.main === module && process.argv[2] === "--fixture") {
       "+010000-01-01 00:00 UTC · top-up +$25.00 USD\n";
     check(run(["logs"], replies, { environment: "other" }), 0, expected, "");
     const result = run(["logs", "--json"], replies, { environment: "other" });
-    check(result, 0, JSON.stringify({ currency: "usd", balance_cents: 9007199254740990,
-      topups: [...first, last].map(({ amount_cents, paid_at }) => ({ amount_cents, paid_at })) }, null, 2) + "\n", "");
+    check(result, 0, JSON.stringify({ ok: true, currency: "usd", balance_cents: 9007199254740990,
+      topups: [...first, last].map(({ amount_cents, paid_at }) => ({ amount_cents, paid_at })) }) + "\n", "");
     assert.deepEqual(result.observation.requests.map(r => r.url), [BASE + "/api/wallet", BASE + "/api/wallet?before=100"]);
   });
 }

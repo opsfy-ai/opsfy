@@ -6,12 +6,13 @@ const { load, find, BUCKETS, HEADINGS } = require("../lib/catalog.js");
 const { install } = require("../lib/install.js");
 const { ENDPOINTS, validateBase, request } = require("../lib/api.js");
 const { out, err } = require("../lib/output.js");
+const { Answer } = require("../lib/answer.js");
 
-function help() {
-  [
+function help(answer) {
+  const lines = [
     `opsfy ${version} · one key for all your tools · https://opsfy.ai`,
     "",
-    "  opsfy list                  the tools: free (install now), paid (not open yet), coming soon",
+    "  opsfy list                  the library: pay as you go, one-command install, self-serve",
     "  opsfy install <app>         install a free app on this Mac, from its upstream source",
     "  opsfy ask <tool>            ask for a tool; it shows on the wall at opsfy.ai",
     "  opsfy login                 log in with your email and a code",
@@ -22,21 +23,26 @@ function help() {
     "  opsfy topup wait <id>       wait until a top-up is paid, cancelled or expired",
     "  opsfy topup status <id>     a top-up's state now",
     "  opsfy call <tool> ...       call a paid tool off your balance (not open yet)",
-    "  opsfy logs [--json]         your balance and paid top-ups",
+    "  opsfy logs                  your balance and paid top-ups",
     "",
-    "  --json                      one JSON answer for an agent, for each topup command",
+    "  --json                      one JSON answer for an agent, on every command",
     "",
     "Mac today; Windows and Linux next. opsfy never runs as root.",
-  ].forEach((line) => out(line));
+  ];
+  if (answer.json) answer.success({ help: lines.join("\n") });
+  else lines.forEach((line) => out(line));
 }
 
-function refusal(tool, argument) {
+function refusal(tool, argument, answer) {
   if (!tool) {
-    out(`${argument} is not in the catalogue. Ask for it: opsfy ask ${argument}`);
+    answer.failure("not_in_catalogue", `${argument} is not in the catalogue. Ask for it: opsfy ask ${argument}`,
+      { tool: argument }, out);
   } else if (tool.bucket === "paid") {
-    out(`${tool.name} is a paid tool. Paid tools are not open yet.`);
+    answer.failure("paid_not_open", `${tool.name} is a paid tool. Paid tools are not open yet.`,
+      { tool: tool.slug, name: tool.name }, out);
   } else if (tool.bucket === "soon") {
-    out(`${tool.name} is coming soon.`);
+    answer.failure("not_installable", `${tool.name} is self-serve: get it at ${tool.url}`,
+      { tool: tool.slug, name: tool.name, url: tool.url }, out);
   } else {
     return false;
   }
@@ -57,31 +63,31 @@ function list(catalog) {
   });
 }
 
-async function post(url, fields, success) {
+async function post(url, fields, success, answer) {
   try {
     await request("POST", url, fields);
-    out(success);
+    answer.success({ status: process.env.OPSFY_DRY_RUN === "1" ? "dry_run" : "asked", tool: fields.tool }, success);
     return 0;
   } catch (error) {
-    out(`could not reach opsfy.ai: ${error.message}. Join at https://opsfy.ai`);
+    answer.failure("unreachable", `could not reach opsfy.ai: ${error.message}. Join at https://opsfy.ai`, {}, out);
     return 1;
   }
 }
 
-async function main(argv) {
+async function main(argv, answer) {
   const [command, ...args] = argv;
   if (["login", "logout", "key"].includes(command)) {
-    return require("../lib/auth.js").run(command, args);
+    return require("../lib/auth.js").run(command, args, answer);
   }
 
   if (["topup", "logs"].includes(command)) {
-    return require("../lib/wallet.js").run(command, args);
+    return require("../lib/wallet.js").run(command, args, answer);
   }
 
   try {
     validateBase();
   } catch (error) {
-    err(error.message);
+    answer.failure("bad_api_base", error.message);
     return 2;
   }
 
@@ -90,65 +96,73 @@ async function main(argv) {
     case "help":
     case "--help":
     case "-h":
-      help();
+      help(answer);
       return 0;
 
     case "--version":
     case "-v":
     case "version":
-      out(version);
+      answer.success({ version }, version);
       return 0;
 
     case "list": {
       const catalog = await load();
-      if (args.includes("--json")) out(JSON.stringify(catalog, null, 2));
+      if (answer.json) answer.success(catalog);
       else list(catalog);
       return 0;
     }
 
     case "install": {
       if (!args.length) {
-        err("usage: opsfy install <app>");
+        answer.failure("usage", "usage: opsfy install <app>");
         return 2;
       }
       const tool = find(await load(), args[0]);
-      if (refusal(tool, args[0])) return 2;
-      return install(tool);
+      if (refusal(tool, args[0], answer)) return 2;
+      return install(tool, answer);
     }
 
     case "ask": {
       if (!args.length) {
-        err("usage: opsfy ask <tool>");
+        answer.failure("usage", "usage: opsfy ask <tool>");
         return 2;
       }
       const name = args.join(" ");
       if (name.length > 120) {
-        out("keep it under 120 characters");
+        answer.failure("too_long", "keep it under 120 characters", {}, out);
         return 2;
       }
-      return post(ENDPOINTS.tool, { tool: name }, `ok · asked for ${name} · on the wall at https://opsfy.ai`);
+      return post(ENDPOINTS.tool, { tool: name }, `ok · asked for ${name} · on the wall at https://opsfy.ai`, answer);
     }
 
     case "call": {
       if (!args.length) {
-        err("usage: opsfy call <tool> ...");
+        answer.failure("usage", "usage: opsfy call <tool> ...");
         return 2;
       }
       const tool = find(await load(), args[0].split(".")[0]);
-      if (!refusal(tool, args[0])) out(`${tool.name} is a free app: opsfy install ${tool.slug}`);
+      if (!refusal(tool, args[0], answer)) {
+        answer.failure("use_install", `${tool.name} is a free app: opsfy install ${tool.slug}`,
+          { tool: tool.slug, name: tool.name, command: `opsfy install ${tool.slug}` }, out);
+      }
       return 2;
     }
 
     default:
-      err(`unknown command: ${command}`);
-      err("run opsfy --help");
+      if (answer.json) answer.failure("unknown_command", `unknown command: ${command} · run opsfy --help`);
+      else {
+        err(`unknown command: ${command}`);
+        err("run opsfy --help");
+      }
       return 2;
   }
 }
 
-main(process.argv.slice(2)).then((code) => {
+const argv = process.argv.slice(2);
+const answer = new Answer(argv.includes("--json"));
+main(argv.filter(value => value !== "--json"), answer).then((code) => {
   process.exitCode = code;
 }).catch((error) => {
-  err(`opsfy: ${error.message}`);
+  answer.failure("internal", `opsfy: ${error.message}`);
   process.exitCode = 1;
 });

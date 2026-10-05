@@ -178,12 +178,12 @@ function noInstall(w, result) {
 
 test("help and version aliases work without loading a catalogue or creating a cache", (t) => {
   const w = world(t);
-  const expected = "opsfy 0.4.0 · one key for all your tools · https://opsfy.ai\n\n  opsfy list                  the tools: free (install now), paid (not open yet), coming soon\n  opsfy install <app>         install a free app on this Mac, from its upstream source\n  opsfy ask <tool>            ask for a tool; it shows on the wall at opsfy.ai\n  opsfy login                 log in with your email and a code\n  opsfy key                   check your key; shows only its last four characters\n  opsfy key rotate            replace your key with a new one\n  opsfy logout                log out; your key stops working\n  opsfy topup [amount]        add money to your balance on a Stripe page\n  opsfy topup wait <id>       wait until a top-up is paid, cancelled or expired\n  opsfy topup status <id>     a top-up's state now\n  opsfy call <tool> ...       call a paid tool off your balance (not open yet)\n  opsfy logs [--json]         your balance and paid top-ups\n\n  --json                      one JSON answer for an agent, for each topup command\n\nMac today; Windows and Linux next. opsfy never runs as root.\n";
+  const expected = "opsfy 0.5.0 · one key for all your tools · https://opsfy.ai\n\n  opsfy list                  the library: pay as you go, one-command install, self-serve\n  opsfy install <app>         install a free app on this Mac, from its upstream source\n  opsfy ask <tool>            ask for a tool; it shows on the wall at opsfy.ai\n  opsfy login                 log in with your email and a code\n  opsfy key                   check your key; shows only its last four characters\n  opsfy key rotate            replace your key with a new one\n  opsfy logout                log out; your key stops working\n  opsfy topup [amount]        add money to your balance on a Stripe page\n  opsfy topup wait <id>       wait until a top-up is paid, cancelled or expired\n  opsfy topup status <id>     a top-up's state now\n  opsfy call <tool> ...       call a paid tool off your balance (not open yet)\n  opsfy logs                  your balance and paid top-ups\n\n  --json                      one JSON answer for an agent, on every command\n\nMac today; Windows and Linux next. opsfy never runs as root.\n";
   for (const args of [[], ["help"], ["--help"], ["-h"]]) {
     check(w.run(args, { OPSFY_CATALOG: path.join(w.root, "absent") }), 0, expected, "");
   }
   for (const alias of ["--version", "-v", "version"]) {
-    check(w.run([alias]), 0, "0.4.0\n", "");
+    check(w.run([alias]), 0, "0.5.0\n", "");
   }
   assert.deepEqual(fs.readdirSync(w.home), []);
   assert.deepEqual(w.calls(), []);
@@ -211,12 +211,12 @@ test("the bundled list keeps bucket order and JSON preserves all catalogue field
   check(result, 0, undefined, "");
   const groups = result.stdout.trimEnd().split("\n\n");
   assert.equal(groups.length, 3);
-  assert.equal(groups[0].split("\n")[0], "Free · install now · opsfy install <app>");
-  assert.equal(groups[1].split("\n")[0], "Paid · not open yet");
-  assert.equal(groups[2].split("\n")[0], "Coming soon");
+  assert.equal(groups[0].split("\n")[0], "One-command install · opsfy install <app>");
+  assert.equal(groups[1].split("\n")[0], "Pay as you go · not open yet");
+  assert.equal(groups[2].split("\n")[0], "Self-serve · get it from the maker's site");
   assert.deepEqual(groups.map((group) => group.split("\n").length - 1), [6, 20, 5]);
-  assert.ok(groups[0].startsWith("Free · install now · opsfy install <app>\n  openwork         OpenWork           Your skills and MCPs in one place, for every agent\n"));
-  check(w.run(["list", "--json"]), 0, JSON.stringify(bundled, null, 2) + "\n", "");
+  assert.ok(groups[0].startsWith("One-command install · opsfy install <app>\n  openwork         OpenWork           Your skills and MCPs in one place, for every agent\n"));
+  check(w.run(["list", "--json"]), 0, JSON.stringify({ ok: true, ...bundled }) + "\n", "");
 });
 
 test("a local catalogue controls column widths and slug matches precede name matches", (t) => {
@@ -227,8 +227,8 @@ test("a local catalogue controls column widths and slug matches precede name mat
   ]);
   const extra = { OPSFY_CATALOG: filename };
   check(w.run(["list"], extra), 0,
-    "Free · install now · opsfy install <app>\n  abc  XYZ  A test app\n  xyz  B    A test app\n\n" +
-    "Paid · not open yet\n\nComing soon\n", "");
+    "One-command install · opsfy install <app>\n  abc  XYZ  A test app\n  xyz  B    A test app\n\n" +
+    "Pay as you go · not open yet\n\nSelf-serve · get it from the maker's site\n", "");
   check(w.eligible(["install", "XYZ"], extra), 0);
   assert.deepEqual(w.calls(), [{ command: "brew", args: ["install", "--cask", "second"] }]);
 });
@@ -377,7 +377,7 @@ test("unknown, paid and coming-soon installs print their exact refusal without c
   const cases = [
     ["missing", "missing is not in the catalogue. Ask for it: opsfy ask missing\n"],
     ["elevenlabs", "ElevenLabs is a paid tool. Paid tools are not open yet.\n"],
-    ["magpie", "Magpie is coming soon.\n"],
+    ["magpie", "Magpie is self-serve: get it at https://usemagpie.app/\n"],
   ];
   for (const [name, output] of cases) {
     const result = w.run(["install", name]);
@@ -409,9 +409,9 @@ test("a fresh cache is used without fetching while a file override takes priorit
   const cached = { tools: [tool({ slug: "cached" })] };
   fs.writeFileSync(path.join(directory, "tools.json"), JSON.stringify(cached));
   check(w.run(["list", "--json"], { OPSFY_HOME: customHome, OPSFY_CATALOG: undefined }),
-    0, JSON.stringify(cached, null, 2) + "\n", "");
+    0, JSON.stringify({ ok: true, ...cached }) + "\n", "");
   check(w.run(["list", "--json"], { OPSFY_HOME: customHome }),
-    0, JSON.stringify(bundled, null, 2) + "\n", "");
+    0, JSON.stringify({ ok: true, ...bundled }) + "\n", "");
   assert.deepEqual(fs.readdirSync(w.home), []);
 });
 
@@ -443,7 +443,7 @@ test("invalid caches fall back to the embedded catalogue and remain untouched", 
     fs.writeFileSync(filename, content);
     check(w.run(["list", "--json"], {
       OPSFY_CATALOG: undefined, OPSFY_DRY_RUN: "1", OPSFY_API_BASE: "https://opsfy.ai",
-    }), 0, JSON.stringify(bundled, null, 2) + "\n", GET);
+    }), 0, JSON.stringify({ ok: true, ...bundled }) + "\n", GET);
     assert.equal(fs.readFileSync(filename, "utf8"), content);
   }
 });
@@ -517,7 +517,7 @@ test("call uses the part before the first dot and logs makes no request", (t) =>
   const cases = [
     ["elevenlabs.speak", "ElevenLabs is a paid tool. Paid tools are not open yet.\n"],
     ["OpenWork.run", "OpenWork is a free app: opsfy install openwork\n"],
-    ["qoder.run", "Qoder is coming soon.\n"],
+    ["qoder.run", "Qoder is self-serve: get it at https://qoder.com/\n"],
     ["missing.run", "missing.run is not in the catalogue. Ask for it: opsfy ask missing.run\n"],
   ];
   for (const [name, output] of cases) check(w.run(["call", name, "payload"]), 2, output, "");
@@ -638,7 +638,7 @@ test("OPSFY_API_BASE moves catalogue, ask and login endpoints and trims trailing
   const w = world(t);
   const extra = { OPSFY_API_BASE: "https://staging.opsfy.ai///", OPSFY_DRY_RUN: "1" };
   check(w.run(["list", "--json"], { ...extra, OPSFY_CATALOG: undefined }), 0,
-    JSON.stringify(bundled, null, 2) + "\n", "dry-run: GET https://staging.opsfy.ai/tools.json\n");
+    JSON.stringify({ ok: true, ...bundled }) + "\n", "dry-run: GET https://staging.opsfy.ai/tools.json\n");
   check(w.run(["ask", "Sheets"], extra), 0,
     "ok · asked for Sheets · on the wall at https://opsfy.ai\n",
     "dry-run: POST https://staging.opsfy.ai/api/tool tool=Sheets\n");
@@ -704,12 +704,259 @@ test("OPSFY_CATALOG beats OPSFY_CATALOG_URL, which beats OPSFY_API_BASE", (t) =>
     OPSFY_CATALOG: w.catalog(custom), OPSFY_CATALOG_URL: "https://catalog.example.test/review.json",
     OPSFY_API_BASE: "https://staging.opsfy.ai", OPSFY_DRY_RUN: "1",
   };
-  check(w.run(["list", "--json"], extra), 0, JSON.stringify({ tools: custom }, null, 2) + "\n", "");
+  check(w.run(["list", "--json"], extra), 0, JSON.stringify({ ok: true, tools: custom }) + "\n", "");
   check(w.run(["list", "--json"], { ...extra, OPSFY_CATALOG: undefined }), 0,
-    JSON.stringify(bundled, null, 2) + "\n", "dry-run: GET https://catalog.example.test/review.json\n");
+    JSON.stringify({ ok: true, ...bundled }) + "\n", "dry-run: GET https://catalog.example.test/review.json\n");
   check(w.run(["list", "--json"], { ...extra, OPSFY_CATALOG: undefined, OPSFY_CATALOG_URL: undefined }), 0,
-    JSON.stringify(bundled, null, 2) + "\n", "dry-run: GET https://staging.opsfy.ai/tools.json\n");
+    JSON.stringify({ ok: true, ...bundled }) + "\n", "dry-run: GET https://staging.opsfy.ai/tools.json\n");
   assert.deepEqual(fs.readdirSync(w.home), []);
 });
 
 require("./wallet.test.js");
+
+function capturedInstall(w, args = ["install", "openwork"], extra = {}, prelude = "") {
+  const filename = path.join(w.root, "install-counts.json");
+  fs.writeFileSync(filename, "[]");
+  const result = w.eligible(args, { OPSFY_NO_COUNT: "0", ...extra }, `
+    const countFetch = globalThis.fetch;
+    globalThis.fetch = async (input, init) => {
+      const request = new Request(input, init);
+      const base = process.env.OPSFY_API_BASE.replace(/\\/+$/, "");
+      if (request.url === base + "/api/install" && request.method === "POST") {
+        const fs = require("node:fs"), filename = ${JSON.stringify(filename)};
+        const counts = JSON.parse(fs.readFileSync(filename, "utf8"));
+        counts.push(await request.text());
+        fs.writeFileSync(filename, JSON.stringify(counts));
+        return new Response("", { status: Number(process.env.INSTALL_COUNT_STATUS || "200") });
+      }
+      return countFetch(input, init);
+    };
+    ${prelude}
+  `);
+  return { result, counts: JSON.parse(fs.readFileSync(filename, "utf8")) };
+}
+
+test("counted installs create one private id and reuse it without changing install results", (t) => {
+  const w = world(t), directory = path.join(w.home, ".opsfy"), filename = path.join(directory, "id");
+  const id = "49".repeat(16);
+  let before;
+  for (const [exit, status] of [["0", "200"], ["3", "200"], ["0", "503"]]) {
+    const { result, counts } = capturedInstall(w, undefined, { FAKE_BREW_EXIT: exit, INSTALL_COUNT_STATUS: status });
+    check(result, exit === "0" ? 0 : 1, OPENWORK + "installing with Homebrew: brew install --cask openwork\n" +
+      (exit === "0" ? "ok · installed · OpenWork\n" : "failed · Homebrew exited 3\n"), "");
+    assert.deepEqual(counts, [`tool=openwork&ok=${exit === "0" ? "1" : "0"}&install_id=${id}`]);
+    assert.equal(fs.readFileSync(filename, "utf8"), id + "\n");
+    const current = fs.statSync(filename);
+    assert.equal(current.size, 33);
+    assert.equal(current.mode & 0o777, 0o600);
+    assert.equal(fs.statSync(directory).mode & 0o777, 0o700);
+    assert.deepEqual(fs.readdirSync(directory), ["id"]);
+    if (before) {
+      assert.equal(current.ino, before.ino);
+      assert.equal(current.mtimeMs, before.mtimeMs);
+    }
+    before = current;
+  }
+});
+
+test("install ids use every random byte at call time and rotate after deleting only id", (t) => {
+  const w = world(t), directory = path.join(w.root, "count-home"), filename = path.join(directory, "id");
+  fs.mkdirSync(directory, { mode: 0o755 });
+  fs.writeFileSync(path.join(directory, "notes.txt"), "keep me\n");
+  for (const seed of [11, 19]) {
+    const bytes = Buffer.from(Array.from({ length: 16 }, (_, i) => (i * 37 + seed) & 255));
+    const { result, counts } = capturedInstall(w, undefined, { OPSFY_HOME: "count-home" }, `
+      require(${JSON.stringify(path.resolve(__dirname, "../lib/install-id.js"))});
+      require("node:crypto").randomBytes = n => Buffer.from(Array.from({ length: n }, (_, i) => (i * 37 + ${seed}) & 255));
+    `);
+    check(result, 0, undefined, "");
+    assert.deepEqual(counts, ["tool=openwork&ok=1&install_id=" + bytes.toString("hex")]);
+    assert.equal(fs.readFileSync(filename, "utf8"), bytes.toString("hex") + "\n");
+    assert.equal(fs.statSync(directory).mode & 0o777, 0o755);
+    assert.deepEqual(fs.readdirSync(directory).sort(), ["id", "notes.txt"]);
+    assert.equal(fs.readFileSync(path.join(directory, "notes.txt"), "utf8"), "keep me\n");
+    fs.unlinkSync(filename);
+  }
+});
+
+test("existing install ids are used or omitted without repairing files or following links", (t) => {
+  const valid = "ab".repeat(16) + "\n";
+  for (const content of [valid, "AB".repeat(16) + "\n", "gg".repeat(16) + "\n", valid + "\n", "symlink", "directory"]) {
+    const w = world(t), directory = path.join(w.home, ".opsfy"), filename = path.join(directory, "id");
+    fs.mkdirSync(directory, { mode: 0o755 });
+    const target = path.join(w.root, "target");
+    fs.writeFileSync(target, valid);
+    if (content === "symlink") fs.symlinkSync(target, filename);
+    else if (content === "directory") fs.mkdirSync(filename);
+    else fs.writeFileSync(filename, content, { mode: 0o644 });
+    const before = fs.lstatSync(filename);
+    const { result, counts } = capturedInstall(w);
+    check(result, 0, undefined, "");
+    assert.deepEqual(counts, ["tool=openwork&ok=1" + (content === valid ? "&install_id=" + valid.trim() : "")]);
+    const after = fs.lstatSync(filename);
+    for (const field of ["ino", "size", "mtimeMs", "mode"]) assert.equal(after[field], before[field]);
+    if (content === "symlink") assert.equal(fs.readlinkSync(filename), target);
+    else if (content !== "directory") assert.equal(fs.readFileSync(filename, "utf8"), content);
+    assert.equal(fs.readFileSync(target, "utf8"), valid);
+    assert.deepEqual(fs.readdirSync(directory), ["id"]);
+    assert.equal(fs.statSync(directory).mode & 0o777, 0o755);
+  }
+});
+
+test("short install-id writes finish before publication", (t) => {
+  const w = world(t);
+  const { result, counts } = capturedInstall(w, undefined, {}, `
+    const idfs = require("node:fs"), open = idfs.openSync, close = idfs.closeSync, write = idfs.writeSync;
+    let temporaryFd;
+    idfs.openSync = function (filename, ...args) {
+      const fd = open.call(this, filename, ...args);
+      if (require("node:path").basename(filename).startsWith(".id-")) temporaryFd = fd;
+      return fd;
+    };
+    idfs.closeSync = function (fd) {
+      if (fd === temporaryFd) temporaryFd = undefined;
+      return close.call(this, fd);
+    };
+    idfs.writeSync = function (...args) {
+      if (args[0] === temporaryFd) args[3] = Math.min(args[3], 7);
+      return write.apply(this, args);
+    };
+  `);
+  check(result, 0, undefined, "");
+  const directory = path.join(w.home, ".opsfy"), id = "49".repeat(16);
+  assert.deepEqual(counts, ["tool=openwork&ok=1&install_id=" + id]);
+  assert.equal(fs.readFileSync(path.join(directory, "id"), "utf8"), id + "\n");
+  assert.deepEqual(fs.readdirSync(directory), ["id"]);
+});
+
+test("install-id write, sync, close and link failures keep plain counts and clean up", (t) => {
+  for (const operation of ["writeSync", "zeroWrite", "fsyncSync", "closeSync", "linkSync"]) {
+    const w = world(t);
+    const { result, counts } = capturedInstall(w, undefined, {}, `
+      const idfs = require("node:fs"), open = idfs.openSync;
+      let temporaryFd, failed = false;
+      idfs.openSync = function (filename, ...args) {
+        const fd = open.call(this, filename, ...args);
+        if (require("node:path").basename(filename).startsWith(".id-")) temporaryFd = fd;
+        return fd;
+      };
+      const operation = ${JSON.stringify(operation)}, name = operation === "zeroWrite" ? "writeSync" : operation;
+      const original = idfs[name];
+      idfs[name] = function (...args) {
+        if (!failed && ((name === "linkSync" && require("node:path").basename(args[0]).startsWith(".id-")) || args[0] === temporaryFd)) {
+          failed = true;
+          if (operation === "zeroWrite") return 0;
+          if (name === "closeSync") { original.apply(this, args); temporaryFd = undefined; }
+          throw Object.assign(new Error("injected id failure"), { code: "EIO" });
+        }
+        return original.apply(this, args);
+      };
+    `);
+    check(result, 0, undefined, "");
+    assert.deepEqual(counts, ["tool=openwork&ok=1"], operation);
+    assert.deepEqual(fs.readdirSync(path.join(w.home, ".opsfy")), [], operation);
+  }
+});
+
+test("failed temporary-id cleanup is silent and later counts reuse only id", (t) => {
+  const w = world(t), directory = path.join(w.home, ".opsfy");
+  const { result, counts } = capturedInstall(w, undefined, {}, `
+    const idfs = require("node:fs"), unlink = idfs.unlinkSync;
+    idfs.unlinkSync = function (filename, ...args) {
+      if (require("node:path").basename(filename).startsWith(".id-")) {
+        throw Object.assign(new Error("injected cleanup failure"), { code: "EACCES" });
+      }
+      return unlink.call(this, filename, ...args);
+    };
+  `);
+  check(result, 0, undefined, "");
+  assert.deepEqual(counts, ["tool=openwork&ok=1&install_id=" + "49".repeat(16)]);
+  const entries = fs.readdirSync(directory).sort();
+  assert.equal(entries.length, 2);
+  assert.ok(entries[0].startsWith(".id-"));
+  assert.equal(entries[1], "id");
+  const again = capturedInstall(w);
+  check(again.result, 0, undefined, "");
+  assert.deepEqual(again.counts, counts);
+  assert.deepEqual(fs.readdirSync(directory).sort(), entries);
+});
+
+test("opt-out and dry counts never inspect an absent, valid or invalid install id", (t) => {
+  for (const content of [null, "ab".repeat(16) + "\n", "gg".repeat(16) + "\n"]) {
+    for (const dry of [false, true]) {
+      const w = world(t), directory = path.join(w.home, ".opsfy"), filename = path.join(directory, "id");
+      if (content !== null) {
+        fs.mkdirSync(directory);
+        fs.writeFileSync(filename, content);
+      }
+      const touched = path.join(w.root, "id-touched.txt");
+      const { result, counts } = capturedInstall(w, undefined, { OPSFY_NO_COUNT: dry ? "0" : "1" }, `
+        const idfs = require("node:fs");
+        for (const name of ["lstatSync", "openSync", "readFileSync", "mkdirSync"]) {
+          const original = idfs[name];
+          idfs[name] = function (filename, ...args) {
+            if (typeof filename === "string" && (filename === ${JSON.stringify(directory)} ||
+                filename.startsWith(${JSON.stringify(directory + path.sep)}))) {
+              idfs.writeFileSync(${JSON.stringify(touched)}, name);
+            }
+            return original.call(this, filename, ...args);
+          };
+        }
+        if (${dry}) {
+          const api = require(${JSON.stringify(path.resolve(__dirname, "../lib/api.js"))});
+          const count = api.count;
+          api.count = async (...args) => {
+            process.env.OPSFY_DRY_RUN = "1";
+            try { await count(...args); } finally { delete process.env.OPSFY_DRY_RUN; }
+          };
+        }
+      `);
+      check(result, 0, undefined, dry ? "dry-run: POST http://127.0.0.1:9/api/install tool=openwork&ok=1\n" : "");
+      assert.deepEqual(counts, []);
+      assert.equal(fs.existsSync(touched), false);
+      if (content === null) assert.equal(fs.existsSync(directory), false);
+      else assert.equal(fs.readFileSync(filename, "utf8"), content);
+    }
+  }
+});
+
+test("global JSON flags are removed before commands and values while similar tokens remain", (t) => {
+  const w = world(t);
+  const extra = { OPSFY_DRY_RUN: "1", OPSFY_API_BASE: "https://opsfy.ai" };
+  for (const args of [["--json", "ask", "Sheets"], ["ask", "--json", "Sheets", "--json"]]) {
+    check(w.run(args, extra), 0, '{"ok":true,"status":"dry_run","tool":"Sheets"}\n',
+      "dry-run: POST https://opsfy.ai/api/tool tool=Sheets\n");
+  }
+  for (const token of ["--JSON", "--json=1", "-j"]) {
+    const name = "Sheets " + token;
+    check(w.run(["ask", "Sheets", token, "--json"], extra), 0,
+      JSON.stringify({ ok: true, status: "dry_run", tool: name }) + "\n",
+      "dry-run: POST https://opsfy.ai/api/tool tool=" + encodeURIComponent(name) + "\n");
+  }
+  check(w.run(["login", "--email", "--json"]), 2,
+    JSON.stringify({ ok: false, error: "usage", message: "usage: opsfy login [--email you@example.com] [--code 123456]" }) + "\n", "");
+  assert.deepEqual(fs.readdirSync(w.home), []);
+  assert.deepEqual(w.calls(), []);
+});
+
+test("JSON keeps ok first and completes UTF-8 output after short writes and pipe interruptions", (t) => {
+  const w = world(t), filename = w.catalog([]);
+  fs.writeFileSync(filename, JSON.stringify({ "0": "metadata", ok: false, note: "é🛠\ntext", tools: [] }));
+  const result = w.run(["list", "--json"], { OPSFY_CATALOG: filename }, `
+    const outputFS = require("node:fs"), originalWrite = outputFS.writeSync;
+    let attempts = 0;
+    outputFS.writeSync = function (fd, buffer, offset, length, position) {
+      if (fd === 1) {
+        attempts++;
+        if (attempts === 1 || attempts === 2 || attempts === 4) {
+          throw Object.assign(new Error("injected pipe interruption"), { code: attempts === 1 ? "EINTR" : "EAGAIN" });
+        }
+        if (attempts === 3) return 0;
+        return originalWrite.call(this, fd, buffer, offset, Math.min(length, 3), position);
+      }
+      return originalWrite.apply(this, arguments);
+    };
+  `);
+  check(result, 0, '{"ok":true,"0":"metadata","note":"é🛠\\ntext","tools":[]}\n', "");
+  assert.deepEqual(fs.readdirSync(w.home), []);
+});
