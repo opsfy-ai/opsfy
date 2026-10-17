@@ -1,0 +1,28 @@
+{
+  "tavily": {
+    "slug": "tavily",
+    "name": "Tavily",
+    "line": "Web search for agents",
+    "unit": "search",
+    "main_input": "question",
+    "inputs": [
+      {
+        "name": "question",
+        "type": "string",
+        "required": true,
+        "description": "What to search for.",
+        "example": "what is opsfy",
+        "max_length": 2000
+      }
+    ],
+    "results": {
+      "fields": [
+        "title",
+        "url",
+        "content"
+      ],
+      "max_results": 5
+    },
+    "legacy_question": true
+  }
+}

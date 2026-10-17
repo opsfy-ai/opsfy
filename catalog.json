@@ -1,6 +1,6 @@
 {
-  "note": "The Opsfy catalogue for the CLI: 31 tools in the Paid, Free and Coming soon buckets; free apps carry their install recipe (a Homebrew cask from the upstream release, or a git clone and the app's own setup).",
-  "version": "2026-09-22",
+  "note": "The Opsfy catalogue for the CLI: 36 tools in the Pay as you go, One-command install and Self-serve buckets; one-command apps carry their install recipe (a Homebrew cask from the upstream release, or a git clone and the app's own setup).",
+  "version": "2026-10-11",
   "tools": [
     {
       "slug": "openrouter",
@@ -48,123 +48,6 @@
       "bucket": "paid"
     },
     {
-      "slug": "replicate",
-      "name": "Replicate",
-      "line": "Run open models, billed by the second",
-      "kind": "paid",
-      "licence": null,
-      "url": "https://replicate.com/",
-      "bucket": "paid"
-    },
-    {
-      "slug": "fal",
-      "name": "fal.ai",
-      "line": "Image, video and audio models, fast",
-      "kind": "paid",
-      "licence": null,
-      "url": "https://fal.ai/",
-      "bucket": "paid"
-    },
-    {
-      "slug": "together",
-      "name": "Together AI",
-      "line": "Open models, fast inference and fine-tuning",
-      "kind": "paid",
-      "licence": null,
-      "url": "https://www.together.ai/",
-      "bucket": "paid"
-    },
-    {
-      "slug": "fireworks",
-      "name": "Fireworks AI",
-      "line": "Open models at speed",
-      "kind": "paid",
-      "licence": null,
-      "url": "https://fireworks.ai/",
-      "bucket": "paid"
-    },
-    {
-      "slug": "xai",
-      "name": "xAI",
-      "line": "Grok by API",
-      "kind": "paid",
-      "licence": null,
-      "url": "https://x.ai/api",
-      "bucket": "paid"
-    },
-    {
-      "slug": "ideogram",
-      "name": "Ideogram",
-      "line": "Images with text that reads",
-      "kind": "paid",
-      "licence": null,
-      "url": "https://ideogram.ai/",
-      "bucket": "paid"
-    },
-    {
-      "slug": "bfl",
-      "name": "Black Forest Labs",
-      "line": "The FLUX image and video models",
-      "kind": "paid",
-      "licence": null,
-      "url": "https://bfl.ai/",
-      "bucket": "paid"
-    },
-    {
-      "slug": "recraft",
-      "name": "Recraft",
-      "line": "Design-grade images and vectors",
-      "kind": "paid",
-      "licence": null,
-      "url": "https://www.recraft.ai/",
-      "bucket": "paid"
-    },
-    {
-      "slug": "stability",
-      "name": "Stability AI",
-      "line": "Stable Diffusion by API",
-      "kind": "paid",
-      "licence": null,
-      "url": "https://platform.stability.ai/",
-      "bucket": "paid"
-    },
-    {
-      "slug": "luma",
-      "name": "Luma",
-      "line": "Video generation, Ray3.2",
-      "kind": "paid",
-      "licence": null,
-      "url": "https://lumalabs.ai/",
-      "bucket": "paid"
-    },
-    {
-      "slug": "heygen",
-      "name": "HeyGen",
-      "line": "Avatar videos by API",
-      "kind": "paid",
-      "licence": null,
-      "url": "https://www.heygen.com/",
-      "bucket": "paid"
-    },
-    {
-      "slug": "deepgram",
-      "name": "Deepgram",
-      "line": "Speech to text, text to speech",
-      "kind": "paid",
-      "licence": null,
-      "url": "https://deepgram.com/",
-      "bucket": "paid"
-    },
-    {
-      "slug": "assemblyai",
-      "name": "AssemblyAI",
-      "line": "Speech to text and understanding",
-      "kind": "paid",
-      "licence": null,
-      "url": "https://www.assemblyai.com/",
-      "bucket": "paid"
-    },
-    {
       "slug": "exa",
       "name": "Exa",
       "line": "Web search built for agents",
@@ -176,11 +59,14 @@
     {
       "slug": "tavily",
       "name": "Tavily",
-      "line": "Search and extraction for agents",
+      "line": "Web search for agents",
       "kind": "paid",
       "licence": null,
-      "url": "https://www.tavily.com/",
-      "bucket": "paid"
+      "url": "https://tavily.com/",
+      "bucket": "paid",
+      "call": {
+        "unit": "search"
+      }
     },
     {
       "slug": "openwork",
@@ -310,6 +196,168 @@
       "kind": "open-source",
       "licence": "Apache-2.0",
       "url": "https://blog.cloudflare.com/cloudflare-os/",
+      "bucket": "soon"
+    },
+    {
+      "slug": "contextvault",
+      "name": "ContextVault",
+      "line": "Shared memory for your AI tools and your team",
+      "kind": "just-launched",
+      "licence": null,
+      "url": "https://www.contextvault.dev/",
+      "bucket": "soon"
+    },
+    {
+      "slug": "kungfu",
+      "name": "Kungfu",
+      "line": "Keeps coding-agent work going across sessions",
+      "kind": "open-source",
+      "licence": "Apache-2.0",
+      "url": "https://github.com/kungfu-systems/kungfu",
+      "bucket": "soon"
+    },
+    {
+      "slug": "episko",
+      "name": "Episko",
+      "line": "A Mac app to manage your Claude Code sessions",
+      "kind": "open-source",
+      "licence": "MIT",
+      "url": "https://episko.dev/",
+      "bucket": "soon"
+    },
+    {
+      "slug": "airstats",
+      "name": "AirStats",
+      "line": "A free system monitor in your Mac's menu bar",
+      "kind": "free-download",
+      "licence": null,
+      "url": "https://airstats.app/",
+      "bucket": "soon"
+    },
+    {
+      "slug": "oats",
+      "name": "Oats",
+      "line": "Free, private meeting notes on your Mac",
+      "kind": "free-download",
+      "licence": null,
+      "url": "https://ariso.ai/oats",
+      "bucket": "soon"
+    },
+    {
+      "slug": "boardy",
+      "name": "Boardy",
+      "line": "An AI that makes warm intros and books the meeting",
+      "kind": "just-launched",
+      "licence": null,
+      "url": "https://www.boardy.ai/",
+      "bucket": "soon"
+    },
+    {
+      "slug": "dock",
+      "name": "Dock",
+      "line": "A shared workspace for people and AI agents",
+      "kind": "just-launched",
+      "licence": null,
+      "url": "https://trydock.ai/",
+      "bucket": "soon"
+    },
+    {
+      "slug": "transcribe",
+      "name": "Transcribe",
+      "line": "Turns a video or podcast link into a transcript",
+      "kind": "just-launched",
+      "licence": null,
+      "url": "https://usetranscribe.io/",
+      "bucket": "soon"
+    },
+    {
+      "slug": "clicky",
+      "name": "Clicky",
+      "line": "An AI tutor beside your cursor that sees your screen",
+      "kind": "open-source",
+      "licence": "MIT",
+      "url": "https://github.com/farzaa/clicky",
+      "bucket": "soon"
+    },
+    {
+      "slug": "marqly",
+      "name": "Marqly",
+      "line": "An AI bookmark manager that answers from your saves",
+      "kind": "just-launched",
+      "licence": null,
+      "url": "https://marqly.com/",
+      "bucket": "soon"
+    },
+    {
+      "slug": "naoma",
+      "name": "Naoma",
+      "line": "An AI agent that gives your visitors a live demo",
+      "kind": "just-launched",
+      "licence": null,
+      "url": "https://naoma.ai/",
+      "bucket": "soon"
+    },
+    {
+      "slug": "youspot",
+      "name": "YouSpot",
+      "line": "A simple AI CRM for people who work alone",
+      "kind": "just-launched",
+      "licence": null,
+      "url": "https://youspot.com/",
+      "bucket": "soon"
+    },
+    {
+      "slug": "context-warp-drive",
+      "name": "Context Warp Drive",
+      "line": "Compacts long AI agent sessions without a model",
+      "kind": "open-source",
+      "licence": "MIT",
+      "url": "https://github.com/dogtorjonah/context-warp-drive",
+      "bucket": "soon"
+    },
+    {
+      "slug": "duobolt",
+      "name": "DuoBolt",
+      "line": "Finds duplicate files for you to review",
+      "kind": "just-launched",
+      "licence": null,
+      "url": "https://duobolt.app/",
+      "bucket": "soon"
+    },
+    {
+      "slug": "keyenv",
+      "name": "KeyEnv",
+      "line": "Secrets for your team, shared only where needed",
+      "kind": "just-launched",
+      "licence": null,
+      "url": "https://www.keyenv.dev/",
+      "bucket": "soon"
+    },
+    {
+      "slug": "termaxa",
+      "name": "Termaxa",
+      "line": "Checks an AI agent's command before it deletes anything",
+      "kind": "open-source",
+      "licence": "Apache-2.0",
+      "url": "https://termaxa.com/",
+      "bucket": "soon"
+    },
+    {
+      "slug": "xtracticle",
+      "name": "Xtracticle",
+      "line": "Saves X articles and threads as Markdown or PDF",
+      "kind": "just-launched",
+      "licence": null,
+      "url": "https://xtracticle.com/",
+      "bucket": "soon"
+    },
+    {
+      "slug": "adrafinil",
+      "name": "Adrafinil",
+      "line": "Keeps your Mac awake only while AI agents work",
+      "kind": "open-source",
+      "licence": "MIT",
+      "url": "https://kagerou.glass/adrafinil/",
       "bucket": "soon"
     }
   ]
