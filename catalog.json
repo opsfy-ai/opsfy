@@ -12,6 +12,15 @@
       "bucket": "paid"
     },
     {
+      "slug": "jev",
+      "name": "Jev",
+      "line": "Typed questions about text",
+      "kind": "paid",
+      "licence": null,
+      "url": "https://typesafe.ai/",
+      "bucket": "paid"
+    },
+    {
       "slug": "elevenlabs",
       "name": "ElevenLabs",
       "line": "Voices, dubbing, voice agents",
@@ -67,6 +76,15 @@
       "call": {
         "unit": "search"
       }
+    },
+    {
+      "slug": "tavily-research",
+      "name": "Tavily Research",
+      "line": "Research reports for agents",
+      "kind": "paid",
+      "licence": null,
+      "url": "https://tavily.com/",
+      "bucket": "paid"
     },
     {
       "slug": "openwork",
@@ -359,6 +377,24 @@
       "licence": "MIT",
       "url": "https://kagerou.glass/adrafinil/",
       "bucket": "soon"
+    },
+    {
+      "slug": "runpod",
+      "name": "Runpod",
+      "line": "Rent a GPU pod with your image",
+      "kind": "paid",
+      "licence": null,
+      "url": "https://www.runpod.io/",
+      "bucket": "paid"
+    },
+    {
+      "slug": "runpod-serverless",
+      "name": "Runpod Serverless",
+      "line": "Run a job on an Opsfy endpoint",
+      "kind": "paid",
+      "licence": null,
+      "url": "https://www.runpod.io/",
+      "bucket": "paid"
     }
   ]
 }

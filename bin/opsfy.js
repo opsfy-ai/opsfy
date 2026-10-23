@@ -29,6 +29,11 @@ function help(answer) {
     '  opsfy call <tool> "<input>"    call a tool; each call is paid from the balance',
     "    --input <name>=<value>       set an input; repeat for more inputs",
     "    --input-file <path|->        read a JSON object from a file or standard input",
+    "  opsfy jobs                     this account's jobs; recover an id after a lost answer",
+    "  opsfy job status <id>          check a job once",
+    "  opsfy job wait <id>            wait up to 10 minutes; the job keeps running",
+    "  opsfy job stop <id>            request a stop where the tool permits it",
+    "  opsfy job result <id>          read the result while the company keeps it",
     "  opsfy logs                     the balance, then each top-up and call with its id, time and amount",
     "",
     "  --json                         one line of JSON on every command; use it always",
@@ -74,7 +79,7 @@ function list(catalog) {
         else if (bucket === "paid" && catalog.prices === "shown" && Object.hasOwn(tool.call, "price_microusd")) {
           const n = BigInt(tool.call.price_microusd);
           const price = "$" + n / 1000000n + "." + String(n % 1000000n).padStart(6, "0").slice(0, n % 100n === 0n ? 4 : 6);
-          suffix = ` · ${price} a ${tool.call.unit}`;
+          suffix = tool.call.metering ? " · " + require("../lib/prices.js").quote(tool.call.metering, tool.call.rental) : ` · ${price} a ${tool.call.unit}`;
         }
         out(`  ${tool.slug.padEnd(slugWidth)}${tool.line}${suffix}`);
       }
@@ -99,6 +104,7 @@ async function main(argv, answer) {
   if (["login", "logout", "key"].includes(command)) {
     return require("../lib/auth.js").run(command, args, answer);
   }
+  if (command === "jobs" || command === "job") return require("../lib/jobs.js").run(command, args, answer);
 
   if (command === "logs" || (command === "call" &&
       (Object.hasOwn(tools, (args[0] || "").toLowerCase()) || /^tavily(?:\.|$)/i.test(args[0] || "")))) {
@@ -139,22 +145,41 @@ async function main(argv, answer) {
         if (!tool.call) return tool;
         const call = { ...tool.call };
         delete call.price_microusd;
+        delete call.metering;
         return { ...tool, call };
       }) };
       delete catalog.prices;
+      let quotes;
       if (catalog.tools.some(tool => tool.bucket === "paid" && tool.call)) {
         const result = await require("../lib/prices.js").load();
         catalog.prices = result.state;
+        quotes = result.metering;
         if (result.state === "shown") {
           for (const tool of catalog.tools) {
             if (tool.bucket === "paid" && tool.call && Object.hasOwn(result.prices, tool.slug)) {
               tool.call.price_microusd = result.prices[tool.slug];
+              if (quotes) tool.call.metering = quotes[tool.slug];
             }
           }
         }
       }
+      const privateTools = require("../lib/private-tools.js");
+      const discovered = (await privateTools.load()).map(tool => quotes?.[tool.slug] ?
+        { ...tool, metering: quotes[tool.slug] } : tool);
+      if (discovered.length) {
+        catalog.private_tools = discovered;
+        const slugs = new Set(discovered.map(tool => tool.slug));
+        catalog.tools = catalog.tools.filter(tool => !slugs.has(tool.slug));
+      }
       if (answer.json) answer.success(catalog);
-      else list(catalog);
+      else {
+        list(catalog);
+        if (discovered.length) {
+          out();
+          out(privateTools.line("list_heading", { N: discovered.length }));
+          discovered.forEach(tool => out(privateTools.line("list_item", tool)));
+        }
+      }
       return 0;
     }
 
@@ -191,6 +216,10 @@ async function main(argv, answer) {
       }
       const catalog = await load();
       const tool = find(catalog, args[0].split(".")[0]);
+      if (!tool || !tool.call) {
+        const descriptor = await require("../lib/private-tools.js").find(tool?.slug || args[0]);
+        if (descriptor) return require("../lib/call.js").run(command, [descriptor.slug, ...args.slice(1)], answer, descriptor);
+      }
       if (tool?.bucket === "paid" && tool.call) {
         const browse = require("../lib/browse.js");
         let descriptor = Object.hasOwn(tools, tool.slug) ? tools[tool.slug] : null;

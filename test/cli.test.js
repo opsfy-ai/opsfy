@@ -178,12 +178,12 @@ function noInstall(w, result) {
 
 test("help and version aliases work without loading a catalogue or creating a cache", (t) => {
   const w = world(t);
-  const expected = "opsfy 0.7.0 · one key and one balance for tools · the agents' guide: https://opsfy.ai/SKILL.md\n\n  opsfy list                     the library: pay as you go, one-command install, self-serve\n  opsfy find <words>             find a tool for a job\n  opsfy info <tool>              read its inputs and price\n  opsfy install <app>            install a free app on this Mac, from its upstream source\n  opsfy ask <tool>               ask for a tool; it shows on the wall at opsfy.ai\n  opsfy login --email <email>    send a login code to the email; then add --code <code>\n  opsfy key                      the account's email and the key's last four characters\n  opsfy key rotate               replace your key with a new one\n  opsfy logout                   log out; your key stops working\n  opsfy logout --all             stop every key on this account; then log in again\n  opsfy topup <amount>           start a top-up of $10, $25, $50, $100, $250 or $500; the person pays on a Stripe page\n  opsfy topup wait <id>          wait until a top-up is paid, cancelled or expired\n  opsfy topup status <id>        whether a top-up is open, paid, cancelled or expired\n  opsfy call <tool> \"<input>\"    call a tool; each call is paid from the balance\n    --input <name>=<value>       set an input; repeat for more inputs\n    --input-file <path|->        read a JSON object from a file or standard input\n  opsfy logs                     the balance, then each top-up and call with its id, time and amount\n\n  --json                         one line of JSON on every command; use it always\n\nopsfy install works on a Mac today, Windows and Linux next, and never as root; the other commands work anywhere\n";
+  const expected = "opsfy 0.8.0 · one key and one balance for tools · the agents' guide: https://opsfy.ai/SKILL.md\n\n  opsfy list                     the library: pay as you go, one-command install, self-serve\n  opsfy find <words>             find a tool for a job\n  opsfy info <tool>              read its inputs and price\n  opsfy install <app>            install a free app on this Mac, from its upstream source\n  opsfy ask <tool>               ask for a tool; it shows on the wall at opsfy.ai\n  opsfy login --email <email>    send a login code to the email; then add --code <code>\n  opsfy key                      the account's email and the key's last four characters\n  opsfy key rotate               replace your key with a new one\n  opsfy logout                   log out; your key stops working\n  opsfy logout --all             stop every key on this account; then log in again\n  opsfy topup <amount>           start a top-up of $10, $25, $50, $100, $250 or $500; the person pays on a Stripe page\n  opsfy topup wait <id>          wait until a top-up is paid, cancelled or expired\n  opsfy topup status <id>        whether a top-up is open, paid, cancelled or expired\n  opsfy call <tool> \"<input>\"    call a tool; each call is paid from the balance\n    --input <name>=<value>       set an input; repeat for more inputs\n    --input-file <path|->        read a JSON object from a file or standard input\n  opsfy jobs                     this account's jobs; recover an id after a lost answer\n  opsfy job status <id>          check a job once\n  opsfy job wait <id>            wait up to 10 minutes; the job keeps running\n  opsfy job stop <id>            request a stop where the tool permits it\n  opsfy job result <id>          read the result while the company keeps it\n  opsfy logs                     the balance, then each top-up and call with its id, time and amount\n\n  --json                         one line of JSON on every command; use it always\n\nopsfy install works on a Mac today, Windows and Linux next, and never as root; the other commands work anywhere\n";
   for (const args of [[], ["help"], ["--help"], ["-h"]]) {
     check(w.run(args, { OPSFY_CATALOG: path.join(w.root, "absent") }), 0, expected, "");
   }
   for (const alias of ["--version", "-v", "version"]) {
-    check(w.run([alias]), 0, "0.7.0\n", "");
+    check(w.run([alias]), 0, "0.8.0\n", "");
   }
   assert.deepEqual(fs.readdirSync(w.home), []);
   assert.deepEqual(w.calls(), []);
@@ -214,7 +214,7 @@ test("the bundled list keeps bucket order and JSON preserves all catalogue field
   assert.equal(groups[0].split("\n")[0], "One-command install · opsfy install <app> --json");
   assert.equal(groups[1].split("\n")[0], "Pay as you go · opsfy call <tool> \"<input>\" --json");
   assert.equal(groups[2].split("\n")[0], "Self-serve · not in opsfy: the person gets each from its maker's site");
-  assert.deepEqual(groups.map((group) => group.split("\n").length - 1), [6, 8, 23]);
+  assert.deepEqual(groups.map((group) => group.split("\n").length - 1), [6, 12, 23]);
   assert.ok(groups[0].startsWith("One-command install · opsfy install <app> --json\n  openwork            Your skills and MCPs in one place, for every agent\n"));
   assert.ok(groups[1].endsWith("\n  the price shows after login: run opsfy login --email <email> --json"));
   check(w.run(["list", "--json"]), 0, JSON.stringify({ ok: true, ...bundled, prices: "login_required" }) + "\n", "");
@@ -243,8 +243,20 @@ test("list strips catalogue prices and skips the lookup when no paid tool is ope
   ];
   const filename = w.catalog(entries), original = fs.readFileSync(filename, "utf8");
   const requested = path.join(w.root, "price-request.txt");
-  const prelude = `globalThis.fetch = async () => {
-    require("node:fs").writeFileSync(${JSON.stringify(requested)}, "requested");
+  const prelude = `let discoveryAnswered = false;
+  globalThis.fetch = async (url, options) => {
+    if (!discoveryAnswered && url === process.env.OPSFY_API_BASE + "/api/tools" &&
+        options?.method === "GET" && options.redirect === "error" &&
+        options.headers?.accept === "application/json" &&
+        options.headers?.authorization === "Bearer " + process.env.OPSFY_API_KEY) {
+      discoveryAnswered = true;
+      const response = new Response(JSON.stringify({ ok: true, tools: [] }), {
+        status: 200, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" }
+      });
+      Object.defineProperty(response, "url", { value: url });
+      return response;
+    }
+    require("node:fs").appendFileSync(${JSON.stringify(requested)}, JSON.stringify({ url, method: options?.method }) + "\\n");
     throw new Error("unexpected price request");
   };`;
   const extra = { OPSFY_CATALOG: filename, OPSFY_API_KEY: "opsfy_sk_" + "a".repeat(64) };
@@ -479,7 +491,7 @@ test("malformed recipes still list but are refused before any installer or count
     const filename = w.catalog([tool({ install })]);
     check(w.run(["list"], { OPSFY_CATALOG: filename }), 0);
     const result = w.run(["install", "demo"], { OPSFY_CATALOG: filename });
-    check(result, 2, "update_needed: this opsfy (0.7.0) cannot install Demo · run npm i -g @opsfy/cli@latest, then run opsfy install demo --json again\n", "");
+    check(result, 2, "update_needed: this opsfy (0.8.0) cannot install Demo · run npm i -g @opsfy/cli@latest, then run opsfy install demo --json again\n", "");
     noInstall(w, result);
   }
 });
@@ -490,7 +502,7 @@ test("install refusals retain their JSON fields and use the checked platform and
     ["openwork", "OpenWork", { OPSFY_PLATFORM: "linux" }, "", "unsupported_platform",
       "opsfy install works only on a Mac today, and this computer runs linux; nothing was changed · ask the person to install OpenWork from https://github.com/different-ai/openwork", {}],
     ["demo", "Demo", { OPSFY_CATALOG: w.catalog([tool({ install: undefined })]) }, "", "update_needed",
-      "this opsfy (0.7.0) cannot install Demo · run npm i -g @opsfy/cli@latest, then run opsfy install demo --json again", {}],
+      "this opsfy (0.8.0) cannot install Demo · run npm i -g @opsfy/cli@latest, then run opsfy install demo --json again", {}],
     ["openwork", "OpenWork", {}, "process.geteuid = () => 0;", "runs_as_root",
       "opsfy install never runs as root; nothing was changed · run it again as the person's own user, without sudo", {}],
     ["openwork", "OpenWork", {}, "", "needs_homebrew",
@@ -798,7 +810,7 @@ test("OPSFY_DRY_RUN preserves platform, recipe and prerequisite refusals", (t) =
     [["install", "openwork"], { OPSFY_PLATFORM: "linux" },
       "unsupported_platform: opsfy install works only on a Mac today, and this computer runs linux; nothing was changed · ask the person to install OpenWork from https://github.com/different-ai/openwork\n"],
     [["install", "demo"], { OPSFY_CATALOG: w.catalog([tool({ install: undefined })]) },
-      "update_needed: this opsfy (0.7.0) cannot install Demo · run npm i -g @opsfy/cli@latest, then run opsfy install demo --json again\n"],
+      "update_needed: this opsfy (0.8.0) cannot install Demo · run npm i -g @opsfy/cli@latest, then run opsfy install demo --json again\n"],
     [["install", "openwork"], {}, OPENWORK +
       "needs_homebrew: OpenWork installs with Homebrew, which is not on this Mac; nothing was changed · ask the person to install Homebrew from https://brew.sh, then run opsfy install openwork --json again\n"],
     [["install", "gstack"], {}, GSTACK +
@@ -1531,7 +1543,7 @@ test("other paid tools use their own main input, name, unit and input list", t =
     [400, "invalid_question", {}, "opsfy.ai refused the prompt · check its limits with opsfy info fixture, change it, then run the call again"],
     [400, "invalid_input", { allowed_inputs: ["prompt", "count"] }, invalid],
     [402, "insufficient_balance", { price_microusd: 12345, balance_microusd: 1 },
-      "a fixture render costs $0.012345 and the balance is $0.000001; nothing was charged · ask the person to add money, then run opsfy topup 10 --json"],
+      "a fixture render needs a hold of $0.012345 and the balance is $0.000001; nothing was charged · ask the person to add money, then run opsfy topup 10 --json"],
     [502, "search_failed", {}, "Fixture Tool answered with an error; nothing was charged · run the same call again"],
     [429, "rate_limited", {}, "too many calls (10 a minute for each account, or Fixture Tool's own limit) · wait 60 seconds, then run the call again"],
   ]) {
@@ -1551,6 +1563,26 @@ test("other paid tools use their own main input, name, unit and input list", t =
     }
   }
   assert.deepEqual(w.calls(), []);
+});
+
+test("unbounded call refusals name the called tool in the range command", t => {
+  const w = world(t), descriptor = {
+    slug: "fixture", name: "Fixture Tool", line: "A fixture tool", unit: "render", main_input: "prompt",
+    inputs: [
+      { name: "prompt", type: "string", required: true, max_length: 100, description: "Prompt", example: "hello" },
+      { name: "count", type: "integer", required: false, minimum: 1, maximum: 5, description: "Count", example: 1 },
+    ],
+    results: { fields: ["text"], max_results: 1 },
+  };
+  const extra = { OPSFY_API_KEY: "opsfy_sk_" + "a".repeat(64), OPSFY_CATALOG: w.catalog([
+    tool({ slug: "fixture", name: "Fixture Tool", bucket: "paid", call: { unit: "render" } }),
+  ]) };
+  const prelude = authPrelude([
+    { route: "tools/fixture", status: 200, body: { ok: true, tool: descriptor } },
+    { route: "call", status: 400, body: { ok: false, error: "unbounded_call", input: "count" } },
+  ]);
+  check(w.run(["call", "fixture", "hello"], extra, prelude), 1, "",
+    "unbounded_call: the maximum charge needs count, which was not given; nothing was charged · run the call again with --input count=<value> (opsfy info fixture --json lists its range)\n");
 });
 
 test("stopping a pending call directs the agent to check logs before calling again", t => {
