@@ -243,6 +243,7 @@ async function main(argv, answer) {
 
 const argv = process.argv.slice(2);
 const answer = new Answer(argv.includes("--json"));
+setImmediate(() => require("../lib/first-run.js").report());
 main(argv.filter(value => value !== "--json"), answer).then((code) => {
   process.exitCode = code;
 }).catch((error) => {

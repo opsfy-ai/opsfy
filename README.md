@@ -63,7 +63,8 @@ Run `opsfy login --email <email> --json`, ask the person for the code, then add 
 - Login: the email goes to opsfy.ai, which emails a code. The key is saved in `~/.opsfy/key`, readable only by this
   user, and never shown in full.
 - Prices: when logged in, `opsfy list` and `opsfy info` send the key to opsfy.ai to show prices.
-- The library: read from opsfy.ai once a day; when that fails, the saved or bundled copy answers.
+- The library: read from opsfy.ai once an hour; when that fails, the saved or bundled copy answers.
+- The first run: the CLI sends its random install id once, from `~/.opsfy/id`, so Opsfy can count installs; the report holds nothing else, and like every request it names the CLI's version. `OPSFY_NO_COUNT=1` stops it.
 - `opsfy install`: first reads opsfy.ai's list of stopped apps, sending nothing about the app, and installs nothing
   if it cannot check. Then it sends a count: the app's name, whether it installed, and a random install id made
   once in `~/.opsfy/id`. `OPSFY_NO_COUNT=1` stops the count and the id; deleting `~/.opsfy/id` makes a new one.
@@ -78,7 +79,7 @@ missing prerequisite: it answers `needs_homebrew` or `missing_tools` with the on
 | --- | --- |
 | `OPSFY_API_KEY` | use this key instead of logging in, for example on a server |
 | `OPSFY_HOME` | where the key, the install id and the list of tools are kept; the default is ~/.opsfy |
-| `OPSFY_NO_COUNT=1` | stop install counts and the install id (a count holds the app's name, whether it installed, and a random install id kept in ~/.opsfy/id) |
+| `OPSFY_NO_COUNT=1` | stop the first-run count, install counts and the install id (the first run sends only a random install id kept in ~/.opsfy/id; an install count also holds the app's name and whether it installed) |
 | `OPSFY_DRY_RUN=1` | install and ask say what they would do and do nothing; call, logs, topup, login, logout and key refuse with dry_run |
 | `OPSFY_CATALOG=<file>` | use only this local catalogue file; a bad file answers internal |
 | `OPSFY_CATALOG_URL=<url>` | read the library from this address instead; OPSFY_CATALOG still comes first |

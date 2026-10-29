@@ -178,12 +178,12 @@ function noInstall(w, result) {
 
 test("help and version aliases work without loading a catalogue or creating a cache", (t) => {
   const w = world(t);
-  const expected = "opsfy 0.8.0 · one key and one balance for tools · the agents' guide: https://opsfy.ai/SKILL.md\n\n  opsfy list                     the library: pay as you go, one-command install, self-serve\n  opsfy find <words>             find a tool for a job\n  opsfy info <tool>              read its inputs and price\n  opsfy install <app>            install a free app on this Mac, from its upstream source\n  opsfy ask <tool>               ask for a tool; it shows on the wall at opsfy.ai\n  opsfy login --email <email>    send a login code to the email; then add --code <code>\n  opsfy key                      the account's email and the key's last four characters\n  opsfy key rotate               replace your key with a new one\n  opsfy logout                   log out; your key stops working\n  opsfy logout --all             stop every key on this account; then log in again\n  opsfy topup <amount>           start a top-up of $10, $25, $50, $100, $250 or $500; the person pays on a Stripe page\n  opsfy topup wait <id>          wait until a top-up is paid, cancelled or expired\n  opsfy topup status <id>        whether a top-up is open, paid, cancelled or expired\n  opsfy call <tool> \"<input>\"    call a tool; each call is paid from the balance\n    --input <name>=<value>       set an input; repeat for more inputs\n    --input-file <path|->        read a JSON object from a file or standard input\n  opsfy jobs                     this account's jobs; recover an id after a lost answer\n  opsfy job status <id>          check a job once\n  opsfy job wait <id>            wait up to 10 minutes; the job keeps running\n  opsfy job stop <id>            request a stop where the tool permits it\n  opsfy job result <id>          read the result while the company keeps it\n  opsfy logs                     the balance, then each top-up and call with its id, time and amount\n\n  --json                         one line of JSON on every command; use it always\n\nopsfy install works on a Mac today, Windows and Linux next, and never as root; the other commands work anywhere\n";
+  const expected = "opsfy 0.8.1 · one key and one balance for tools · the agents' guide: https://opsfy.ai/SKILL.md\n\n  opsfy list                     the library: pay as you go, one-command install, self-serve\n  opsfy find <words>             find a tool for a job\n  opsfy info <tool>              read its inputs and price\n  opsfy install <app>            install a free app on this Mac, from its upstream source\n  opsfy ask <tool>               ask for a tool; it shows on the wall at opsfy.ai\n  opsfy login --email <email>    send a login code to the email; then add --code <code>\n  opsfy key                      the account's email and the key's last four characters\n  opsfy key rotate               replace your key with a new one\n  opsfy logout                   log out; your key stops working\n  opsfy logout --all             stop every key on this account; then log in again\n  opsfy topup <amount>           start a top-up of $10, $25, $50, $100, $250 or $500; the person pays on a Stripe page\n  opsfy topup wait <id>          wait until a top-up is paid, cancelled or expired\n  opsfy topup status <id>        whether a top-up is open, paid, cancelled or expired\n  opsfy call <tool> \"<input>\"    call a tool; each call is paid from the balance\n    --input <name>=<value>       set an input; repeat for more inputs\n    --input-file <path|->        read a JSON object from a file or standard input\n  opsfy jobs                     this account's jobs; recover an id after a lost answer\n  opsfy job status <id>          check a job once\n  opsfy job wait <id>            wait up to 10 minutes; the job keeps running\n  opsfy job stop <id>            request a stop where the tool permits it\n  opsfy job result <id>          read the result while the company keeps it\n  opsfy logs                     the balance, then each top-up and call with its id, time and amount\n\n  --json                         one line of JSON on every command; use it always\n\nopsfy install works on a Mac today, Windows and Linux next, and never as root; the other commands work anywhere\n";
   for (const args of [[], ["help"], ["--help"], ["-h"]]) {
     check(w.run(args, { OPSFY_CATALOG: path.join(w.root, "absent") }), 0, expected, "");
   }
   for (const alias of ["--version", "-v", "version"]) {
-    check(w.run([alias]), 0, "0.8.0\n", "");
+    check(w.run([alias]), 0, "0.8.1\n", "");
   }
   assert.deepEqual(fs.readdirSync(w.home), []);
   assert.deepEqual(w.calls(), []);
@@ -491,7 +491,7 @@ test("malformed recipes still list but are refused before any installer or count
     const filename = w.catalog([tool({ install })]);
     check(w.run(["list"], { OPSFY_CATALOG: filename }), 0);
     const result = w.run(["install", "demo"], { OPSFY_CATALOG: filename });
-    check(result, 2, "update_needed: this opsfy (0.8.0) cannot install Demo · run npm i -g @opsfy/cli@latest, then run opsfy install demo --json again\n", "");
+    check(result, 2, "update_needed: this opsfy (0.8.1) cannot install Demo · run npm i -g @opsfy/cli@latest, then run opsfy install demo --json again\n", "");
     noInstall(w, result);
   }
 });
@@ -502,7 +502,7 @@ test("install refusals retain their JSON fields and use the checked platform and
     ["openwork", "OpenWork", { OPSFY_PLATFORM: "linux" }, "", "unsupported_platform",
       "opsfy install works only on a Mac today, and this computer runs linux; nothing was changed · ask the person to install OpenWork from https://github.com/different-ai/openwork", {}],
     ["demo", "Demo", { OPSFY_CATALOG: w.catalog([tool({ install: undefined })]) }, "", "update_needed",
-      "this opsfy (0.8.0) cannot install Demo · run npm i -g @opsfy/cli@latest, then run opsfy install demo --json again", {}],
+      "this opsfy (0.8.1) cannot install Demo · run npm i -g @opsfy/cli@latest, then run opsfy install demo --json again", {}],
     ["openwork", "OpenWork", {}, "process.geteuid = () => 0;", "runs_as_root",
       "opsfy install never runs as root; nothing was changed · run it again as the person's own user, without sudo", {}],
     ["openwork", "OpenWork", {}, "", "needs_homebrew",
@@ -810,7 +810,7 @@ test("OPSFY_DRY_RUN preserves platform, recipe and prerequisite refusals", (t) =
     [["install", "openwork"], { OPSFY_PLATFORM: "linux" },
       "unsupported_platform: opsfy install works only on a Mac today, and this computer runs linux; nothing was changed · ask the person to install OpenWork from https://github.com/different-ai/openwork\n"],
     [["install", "demo"], { OPSFY_CATALOG: w.catalog([tool({ install: undefined })]) },
-      "update_needed: this opsfy (0.8.0) cannot install Demo · run npm i -g @opsfy/cli@latest, then run opsfy install demo --json again\n"],
+      "update_needed: this opsfy (0.8.1) cannot install Demo · run npm i -g @opsfy/cli@latest, then run opsfy install demo --json again\n"],
     [["install", "openwork"], {}, OPENWORK +
       "needs_homebrew: OpenWork installs with Homebrew, which is not on this Mac; nothing was changed · ask the person to install Homebrew from https://brew.sh, then run opsfy install openwork --json again\n"],
     [["install", "gstack"], {}, GSTACK +
@@ -1086,6 +1086,8 @@ test("short install-id writes finish before publication", (t) => {
 test("install-id write, sync, close and link failures keep plain counts and clean up", (t) => {
   for (const operation of ["writeSync", "zeroWrite", "fsyncSync", "closeSync", "linkSync"]) {
     const w = world(t);
+    fs.mkdirSync(path.join(w.home, ".opsfy"), { mode: 0o700 });
+    fs.writeFileSync(path.join(w.home, ".opsfy", "first-run-sent"), "sent\n", { mode: 0o600 });
     const { result, counts } = capturedInstall(w, undefined, {}, `
       const idfs = require("node:fs"), open = idfs.openSync;
       let temporaryFd, failed = false;
@@ -1108,7 +1110,7 @@ test("install-id write, sync, close and link failures keep plain counts and clea
     `);
     check(result, 0, undefined, "");
     assert.deepEqual(counts, ["tool=openwork&ok=1"], operation);
-    assert.deepEqual(fs.readdirSync(path.join(w.home, ".opsfy")), [], operation);
+    assert.deepEqual(fs.readdirSync(path.join(w.home, ".opsfy")), ["first-run-sent"], operation);
   }
 });
 
@@ -1139,8 +1141,9 @@ test("opt-out and dry counts never inspect an absent, valid or invalid install i
   for (const content of [null, "ab".repeat(16) + "\n", "gg".repeat(16) + "\n"]) {
     for (const dry of [false, true]) {
       const w = world(t), directory = path.join(w.home, ".opsfy"), filename = path.join(directory, "id");
+      fs.mkdirSync(directory, { mode: 0o700 });
+      fs.writeFileSync(path.join(directory, "first-run-sent"), "sent\n", { mode: 0o600 });
       if (content !== null) {
-        fs.mkdirSync(directory);
         fs.writeFileSync(filename, content);
       }
       const touched = path.join(w.root, "id-touched.txt");
@@ -1149,7 +1152,7 @@ test("opt-out and dry counts never inspect an absent, valid or invalid install i
         for (const name of ["lstatSync", "openSync", "readFileSync", "mkdirSync"]) {
           const original = idfs[name];
           idfs[name] = function (filename, ...args) {
-            if (typeof filename === "string" && (filename === ${JSON.stringify(directory)} ||
+            if (typeof filename === "string" && filename !== ${JSON.stringify(path.join(directory, "first-run-sent"))} && (filename === ${JSON.stringify(directory)} ||
                 filename.startsWith(${JSON.stringify(directory + path.sep)}))) {
               idfs.writeFileSync(${JSON.stringify(touched)}, name);
             }
@@ -1168,7 +1171,7 @@ test("opt-out and dry counts never inspect an absent, valid or invalid install i
       check(result, 0, undefined, dry ? "OPSFY_DRY_RUN=1: would send POST http://127.0.0.1:9/api/install tool=openwork&ok=1\n" : "");
       assert.deepEqual(counts, []);
       assert.equal(fs.existsSync(touched), false);
-      if (content === null) assert.equal(fs.existsSync(directory), false);
+      if (content === null) assert.deepEqual(fs.readdirSync(directory), ["first-run-sent"]);
       else assert.equal(fs.readFileSync(filename, "utf8"), content);
     }
   }
@@ -1902,6 +1905,398 @@ test("auth file, lock and API base refusals carry the approved next steps", t =>
       }
       check(w.run(["key", ...(json ? ["--json"] : [])], error === "bad_api_base" ? { OPSFY_API_BASE: "ftp://example.com" } : {}, authPrelude()), status,
         json ? JSON.stringify({ ok: false, error, message }) + "\n" : "", json ? "" : `${error}: ${message}\n`);
+    }
+  }
+});
+
+// CLI 0.8.1: use the existing child-process fetch seam, with no sockets or real requests.
+function recordedRun(w, args, extra = {}, replies = [], prelude = "") {
+  const filename = path.join(w.root, "requests.json");
+  fs.writeFileSync(filename, "[]");
+  const result = w.run(args, extra, `
+    const requestFS = require("node:fs"), requestLog = ${JSON.stringify(filename)};
+    const replies = ${JSON.stringify(replies)}, requests = [];
+    const saveRequests = () => requestFS.writeFileSync(requestLog, JSON.stringify(requests));
+    globalThis.fetch = async (input, init) => {
+      const started = performance.now(), request = new Request(input, init);
+      const reply = replies[requests.length];
+      const entry = { url: request.url, method: request.method, headers: Object.fromEntries(request.headers),
+        body: await request.text(), redirect: request.redirect, signal: init.signal instanceof AbortSignal,
+        output: requestFS.readFileSync(${JSON.stringify(path.join(w.root, "stdout.txt"))}, "utf8") };
+      requests.push(entry);
+      saveRequests();
+      if (!reply || request.url !== "http://127.0.0.1:9" + reply.path || request.method !== (reply.method || "GET")) {
+        throw new Error("unplanned offline request");
+      }
+      if (reply.error) throw Object.assign(new Error("offline fixture"), { name: reply.error });
+      if (reply.hold) return new Promise((resolve, reject) => {
+        // AbortSignal.timeout is unref'ed; stand in for the socket that keeps a real fetch alive.
+        const timer = setTimeout(() => reject(new Error("report did not abort")), 6000);
+        init.signal.addEventListener("abort", () => {
+          clearTimeout(timer);
+          entry.abortedAfter = performance.now() - started;
+          saveRequests();
+          reject(init.signal.reason);
+        }, { once: true });
+      });
+      const body = reply.body === undefined ? null : typeof reply.body === "string" ? reply.body : JSON.stringify(reply.body);
+      const response = new Response(body, { status: reply.status || 200,
+        headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", ...reply.headers } });
+      Object.defineProperty(response, "url", { value: request.url });
+      return response;
+    };
+    ${prelude}
+  `);
+  return { result, requests: JSON.parse(fs.readFileSync(filename, "utf8")) };
+}
+
+function firstRun(w, args = ["--version"], extra = {}, reply = {}, prelude = "") {
+  return recordedRun(w, args, { OPSFY_NO_COUNT: "0", ...extra },
+    [{ path: "/api/first-run", method: "POST", ...reply }], prelude);
+}
+
+test("first-run reports once for help, version, browsing and refusals without changing their answers", t => {
+  for (const args of [[], ["help"], ["--help"], ["-h"], ["--version"], ["-v"], ["version"],
+    ["--version", "--json"], ["find", "canaryword7", "--json"], ["info", "openwork", "--json"],
+    ["list", "--json"], ["nosuchcommand"], ["install"], ["call"], ["jobs", "--json"]]) {
+    const w = world(t), quiet = w.run(args);
+    const { result, requests } = firstRun(w, args);
+    check(result, quiet.status, quiet.stdout, quiet.stderr);
+    assert.equal(requests.length, 1, args.join(" "));
+    assert.equal(requests[0].url, "http://127.0.0.1:9/api/first-run");
+    const directory = path.join(w.home, ".opsfy"), marker = path.join(directory, "first-run-sent");
+    assert.equal(fs.readFileSync(marker, "utf8"), "sent\n");
+    assert.equal(fs.statSync(marker).mode & 0o777, 0o600);
+    const before = fs.statSync(marker);
+    const again = firstRun(w, args);
+    check(again.result, quiet.status, quiet.stdout, quiet.stderr);
+    assert.deepEqual(again.requests, []);
+    for (const field of ["ino", "mtimeMs", "mode", "size"]) assert.equal(fs.statSync(marker)[field], before[field]);
+  }
+});
+
+test("first-run sends only the existing install id and usual headers in default, absolute and relative homes", t => {
+  for (const home of [undefined, "absolute", "relative-home"]) {
+    const w = world(t), given = home === "absolute" ? path.join(w.root, "custom-home") : home;
+    const directory = given === undefined ? path.join(w.home, ".opsfy") : path.resolve(w.root, given);
+    fs.mkdirSync(directory, { mode: 0o700 });
+    const id = "ab".repeat(16), key = "opsfy_sk_" + "c".repeat(64);
+    fs.writeFileSync(path.join(directory, "id"), id + "\n", { mode: 0o644 });
+    fs.writeFileSync(path.join(directory, "key"), key + "\n", { mode: 0o600 });
+    fs.writeFileSync(path.join(directory, "notes"), "keep me\n", { mode: 0o644 });
+    const before = fs.statSync(path.join(directory, "id"));
+    const { result, requests } = firstRun(w, ["--version", "canaryword7"], { OPSFY_HOME: given, OPSFY_API_KEY: key });
+    check(result, 0, require("../package.json").version + "\n", "");
+    assert.equal(requests.length, 1);
+    const { output, ...request } = requests[0];
+    assert.equal(output, result.stdout);
+    assert.deepEqual(request, { url: "http://127.0.0.1:9/api/first-run", method: "POST",
+      headers: { accept: "application/json", "content-type": "application/x-www-form-urlencoded",
+        "user-agent": "opsfy/" + require("../package.json").version },
+      body: "install_id=" + id, redirect: "error", signal: true });
+    assert.ok(!JSON.stringify(requests).includes(key));
+    assert.ok(!JSON.stringify(requests).includes("canaryword7"));
+    for (const field of ["ino", "mtimeMs", "mode", "size"]) assert.equal(fs.statSync(path.join(directory, "id"))[field], before[field]);
+    assert.equal(fs.readFileSync(path.join(directory, "id"), "utf8"), id + "\n");
+    assert.equal(fs.readFileSync(path.join(directory, "key"), "utf8"), key + "\n");
+    assert.equal(fs.readFileSync(path.join(directory, "notes"), "utf8"), "keep me\n");
+    assert.deepEqual(fs.readdirSync(directory).sort(), ["first-run-sent", "id", "key", "notes"]);
+    if (given !== undefined) assert.deepEqual(fs.readdirSync(w.home), []);
+  }
+});
+
+test("first-run switches stop only at 1 and refused bases do no home file work", t => {
+  const cases = ["OPSFY_NO_COUNT", "OPSFY_DRY_RUN"].flatMap(name =>
+    ["0", "true", "", undefined, "1"].map(value => [{ OPSFY_NO_COUNT: undefined, [name]: value }, value === "1"]));
+  cases.push([{ OPSFY_API_BASE: "ftp://127.0.0.1:9" }, true]);
+  for (const [extra, stopped] of cases) {
+    const w = world(t), directory = path.join(w.home, ".opsfy"), touched = path.join(w.root, "home-touched");
+    const quiet = w.run(["--version"], { ...extra, OPSFY_NO_COUNT: "1" });
+    const { result, requests } = firstRun(w, ["--version"], extra, {}, `
+      const guardFS = require("node:fs"), directory = ${JSON.stringify(directory)};
+      for (const name of ["lstatSync", "statSync", "openSync", "readFileSync", "mkdirSync"]) {
+        const original = guardFS[name];
+        guardFS[name] = function (filename, ...rest) {
+          if (typeof filename === "string" && (filename === directory || filename.startsWith(directory + "/"))) {
+            guardFS.writeFileSync(${JSON.stringify(touched)}, name);
+          }
+          return original.call(this, filename, ...rest);
+        };
+      }
+    `);
+    check(result, quiet.status, quiet.stdout, quiet.stderr);
+    assert.equal(requests.length, stopped ? 0 : 1);
+    assert.equal(fs.existsSync(touched), !stopped);
+    if (stopped) assert.deepEqual(fs.readdirSync(w.home), []);
+    else assert.deepEqual(fs.readdirSync(directory).sort(), ["first-run-sent", "id"]);
+  }
+});
+
+test("first-run markers suppress later reports in every file form and on lstat errors", t => {
+  const counted = world(t);
+  assert.equal(firstRun(counted).requests.length, 1);
+  for (const form of ["file", "directory", "symlink", "broken-link", "denied"]) {
+    const w = world(t), directory = path.join(w.home, ".opsfy"), marker = path.join(directory, "first-run-sent");
+    fs.mkdirSync(directory, { mode: 0o700 });
+    const target = path.join(w.root, "target");
+    fs.writeFileSync(target, "leave this alone\n", { mode: 0o644 });
+    if (form === "file") fs.writeFileSync(marker, "other\n", { mode: 0o644 });
+    else if (form === "directory") fs.mkdirSync(marker);
+    else if (form !== "denied") fs.symlinkSync(form === "symlink" ? target : target + "-missing", marker);
+    const before = form === "denied" ? null : fs.lstatSync(marker);
+    const { result, requests } = firstRun(w, undefined, {}, {}, form !== "denied" ? "" : `
+      const deniedFS = require("node:fs"), stat = deniedFS.lstatSync;
+      deniedFS.lstatSync = function (filename, ...rest) {
+        if (filename === ${JSON.stringify(marker)}) throw Object.assign(new Error("denied"), { code: "EACCES" });
+        return stat.call(this, filename, ...rest);
+      };
+    `);
+    check(result, 0, require("../package.json").version + "\n", "");
+    assert.deepEqual(requests, []);
+    assert.deepEqual(fs.readdirSync(directory), before ? ["first-run-sent"] : []);
+    if (before) for (const field of ["ino", "mtimeMs", "mode", "size"]) assert.equal(fs.lstatSync(marker)[field], before[field]);
+    if (form === "file") assert.equal(fs.readFileSync(marker, "utf8"), "other\n");
+    if (["symlink", "broken-link"].includes(form)) assert.equal(fs.readlinkSync(marker), form === "symlink" ? target : target + "-missing");
+    assert.equal(fs.readFileSync(target, "utf8"), "leave this alone\n");
+  }
+});
+
+test("first-run uses valid ids and leaves unusable ids and homes untouched", t => {
+  const valid = "cd".repeat(16) + "\n";
+  for (const content of [valid, "AB".repeat(16) + "\n", "g".repeat(32) + "\n", valid.slice(1), valid + "\n", "directory", "symlink"]) {
+    const w = world(t), directory = path.join(w.home, ".opsfy"), filename = path.join(directory, "id");
+    fs.mkdirSync(directory, { mode: 0o755 });
+    const target = path.join(w.root, "target");
+    fs.writeFileSync(target, valid);
+    if (content === "directory") fs.mkdirSync(filename);
+    else if (content === "symlink") fs.symlinkSync(target, filename);
+    else fs.writeFileSync(filename, content, { mode: 0o644 });
+    const before = fs.lstatSync(filename);
+    const { result, requests } = firstRun(w);
+    check(result, 0, require("../package.json").version + "\n", "");
+    assert.equal(requests.length, content === valid ? 1 : 0);
+    assert.equal(fs.existsSync(path.join(directory, "first-run-sent")), content === valid);
+    for (const field of ["ino", "mtimeMs", "mode", "size"]) assert.equal(fs.lstatSync(filename)[field], before[field]);
+    assert.equal(fs.statSync(directory).mode & 0o777, 0o755);
+    assert.equal(fs.readFileSync(target, "utf8"), valid);
+    if (content === "symlink") assert.equal(fs.readlinkSync(filename), target);
+    else if (content !== "directory") assert.equal(fs.readFileSync(filename, "utf8"), content);
+  }
+  for (const linked of [false, true]) {
+    const w = world(t), directory = path.join(w.home, ".opsfy"), target = path.join(w.root, "elsewhere");
+    if (linked) { fs.mkdirSync(target); fs.symlinkSync(target, directory); }
+    else fs.writeFileSync(directory, "not a directory\n");
+    const { result, requests } = firstRun(w);
+    check(result, 0, require("../package.json").version + "\n", "");
+    assert.deepEqual(requests, []);
+    if (linked) assert.deepEqual(fs.readdirSync(target), []);
+    else assert.equal(fs.readFileSync(directory, "utf8"), "not a directory\n");
+  }
+});
+
+test("first-run retries refusals, redirects and lost answers with the same id until any 2xx", t => {
+  const failures = [{ status: 404 }, { status: 503 }, { status: 429 },
+    { status: 307, headers: { location: "/elsewhere" } }, { error: "TypeError" }, { error: "TimeoutError" }];
+  for (const [index, failure] of failures.entries()) {
+    const w = world(t), quiet = w.run(["--version"]), directory = path.join(w.home, ".opsfy");
+    const refused = firstRun(w, undefined, {}, failure);
+    check(refused.result, quiet.status, quiet.stdout, quiet.stderr);
+    assert.equal(refused.requests.length, 1);
+    assert.equal(refused.requests[0].redirect, "error");
+    assert.deepEqual(fs.readdirSync(directory), ["id"]);
+    const id = fs.readFileSync(path.join(directory, "id"), "utf8");
+    const accepted = firstRun(w, undefined, {}, { status: [200, 201, 204, 299][index % 4] });
+    check(accepted.result, quiet.status, quiet.stdout, quiet.stderr);
+    assert.equal(accepted.requests.length, 1);
+    assert.equal(accepted.requests[0].body, refused.requests[0].body);
+    assert.equal(fs.readFileSync(path.join(directory, "id"), "utf8"), id);
+    assert.equal(fs.readFileSync(path.join(directory, "first-run-sent"), "utf8"), "sent\n");
+    assert.deepEqual(firstRun(w).requests, []);
+  }
+});
+
+test("first-run defers slow id work until after output and aborts an unanswered report at three seconds", t => {
+  const w = world(t), quiet = w.run(["--version"]), observed = path.join(w.root, "output-at-fsync");
+  const { result, requests } = firstRun(w, undefined, {}, { hold: true }, `
+    const slowFS = require("node:fs"), sync = slowFS.fsyncSync;
+    slowFS.fsyncSync = function (...args) {
+      slowFS.writeFileSync(${JSON.stringify(observed)}, slowFS.readFileSync(${JSON.stringify(path.join(w.root, "stdout.txt"))}));
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1500);
+      return sync.apply(this, args);
+    };
+  `);
+  check(result, quiet.status, quiet.stdout, quiet.stderr);
+  assert.equal(requests.length, 1);
+  assert.equal(fs.readFileSync(observed, "utf8"), quiet.stdout);
+  assert.equal(requests[0].output, quiet.stdout);
+  assert.ok(requests[0].abortedAfter >= 2700 && requests[0].abortedAfter <= 3500, JSON.stringify(requests));
+  assert.deepEqual(fs.readdirSync(path.join(w.home, ".opsfy")), ["id"]);
+});
+
+test("first-run preserves a marker created while its request is outstanding", t => {
+  const w = world(t), marker = path.join(w.home, ".opsfy", "first-run-sent");
+  const { result, requests } = firstRun(w, undefined, {}, {}, `
+    const racingFetch = globalThis.fetch;
+    globalThis.fetch = async (...args) => {
+      const response = await racingFetch(...args);
+      require("node:fs").writeFileSync(${JSON.stringify(marker)}, "other\\n", { mode: 0o644 });
+      return response;
+    };
+  `);
+  check(result, 0, require("../package.json").version + "\n", "");
+  assert.equal(requests.length, 1);
+  assert.equal(fs.readFileSync(marker, "utf8"), "other\n");
+  assert.equal(fs.statSync(marker).mode & 0o777, 0o644);
+  assert.deepEqual(firstRun(w).requests, []);
+});
+
+test("first-run marker open, write and close failures stay silent and short writes complete", t => {
+  for (const operation of ["open", "write", "close", "short", "zero"]) {
+    const w = world(t), quiet = w.run(["--version"]), marker = path.join(w.home, ".opsfy", "first-run-sent");
+    const { result, requests } = firstRun(w, undefined, {}, {}, `
+      const markerFS = require("node:fs"), operation = ${JSON.stringify(operation)};
+      const open = markerFS.openSync, write = markerFS.writeSync, close = markerFS.closeSync;
+      let markerFD;
+      markerFS.openSync = function (filename, ...rest) {
+        if (filename === ${JSON.stringify(marker)} && operation === "open") throw new Error("marker open failed");
+        const fd = open.call(this, filename, ...rest);
+        if (filename === ${JSON.stringify(marker)}) markerFD = fd;
+        return fd;
+      };
+      markerFS.writeSync = function (...args) {
+        if (args[0] === markerFD) {
+          if (operation === "write") throw new Error("marker write failed");
+          if (operation === "zero") return 0;
+          if (operation === "short") args[3] = Math.min(args[3], 2);
+        }
+        return write.apply(this, args);
+      };
+      markerFS.closeSync = function (fd) {
+        close.call(this, fd);
+        if (fd === markerFD && operation === "close") throw new Error("marker close failed");
+      };
+    `);
+    check(result, quiet.status, quiet.stdout, quiet.stderr);
+    assert.equal(requests.length, 1);
+    if (operation === "open") {
+      assert.equal(fs.existsSync(marker), false);
+      assert.equal(firstRun(w).requests.length, 1);
+    } else {
+      assert.equal(fs.readFileSync(marker, "utf8"), ["write", "zero"].includes(operation) ? "" : "sent\n");
+      assert.equal(fs.statSync(marker).mode & 0o777, 0o600);
+      assert.deepEqual(firstRun(w).requests, []);
+    }
+  }
+});
+
+test("find reads private tools once after the catalogue and ranks open matches in JSON and plain output", t => {
+  const { legacy_question, ...base } = require("../lib/tool-data.json").tavily;
+  const privateTool = { ...base, slug: "alpha", name: "Alpha", tool_type: "personal", price_microusd: 9600 };
+  const catalog = { tools: [
+    tool({ slug: "closed", name: "Closed", bucket: "paid", jobs: "workspace" }),
+    tool({ slug: "zulu", name: "Zulu", bucket: "paid", call: { unit: "run" }, jobs: "workspace" }),
+    tool({ slug: "alpha", name: "Alpha", bucket: "paid", jobs: "workspace" }),
+    tool({ slug: "priority", name: "Workspace", bucket: "paid" }),
+  ] };
+  for (const json of [true, false]) {
+    const w = world(t);
+    const { result, requests } = recordedRun(w, ["find", "workspace", ...(json ? ["--json"] : [])],
+      { OPSFY_CATALOG: undefined, OPSFY_API_KEY: "opsfy_sk_" + "a".repeat(64) }, [
+        { path: "/tools.json", body: catalog }, { path: "/api/tools", body: { ok: true, tools: [privateTool] } },
+      ]);
+    check(result, 0, json ? JSON.stringify({ ok: true, matches: [
+      { slug: "priority", name: "Workspace", group: "Pay as you go", action: "not open yet" },
+      { slug: "alpha", name: "Alpha", group: "Pay as you go", action: "open · opsfy call alpha" },
+      { slug: "zulu", name: "Zulu", group: "Pay as you go", action: "open · opsfy call zulu" },
+      { slug: "closed", name: "Closed", group: "Pay as you go", action: "not open yet" },
+    ] }) + "\n" : "Workspace · Pay as you go · not open yet\n" +
+      "Alpha · Pay as you go · open: run opsfy info alpha --json for its inputs, then opsfy call alpha --json\n" +
+      'Zulu · Pay as you go · open: run opsfy info zulu --json, then opsfy call zulu "<input>" --json\n' +
+      "Closed · Pay as you go · not open yet\n", "");
+    assert.deepEqual(requests.map(request => [request.method, new URL(request.url).pathname]),
+      [["GET", "/tools.json"], ["GET", "/api/tools"]]);
+  }
+});
+
+test("find keeps closed-tool results when private discovery is empty, refused or unavailable", t => {
+  const { legacy_question, ...base } = require("../lib/tool-data.json").tavily;
+  const descriptor = { ...base, slug: "alpha", name: "Alpha", tool_type: "personal", price_microusd: 9600 };
+  for (const [extra, reply, open, reads] of [
+    [{ OPSFY_API_KEY: "opsfy_sk_" + "a".repeat(64) }, { body: { ok: true, tools: [descriptor] } }, true, 1],
+    [{}, null, false, 0], [{ OPSFY_API_KEY: "invalid" }, null, false, 0],
+    [{ OPSFY_API_KEY: "opsfy_sk_" + "a".repeat(64), OPSFY_DRY_RUN: "1" }, null, false, 0],
+    [{ OPSFY_API_KEY: "opsfy_sk_" + "a".repeat(64) }, { body: { ok: true, tools: [] } }, false, 1],
+    [{ OPSFY_API_KEY: "opsfy_sk_" + "a".repeat(64) }, { status: 401, body: { ok: false, error: "invalid_key" } }, false, 1],
+    [{ OPSFY_API_KEY: "opsfy_sk_" + "a".repeat(64) }, { error: "TypeError" }, false, 1],
+  ]) {
+    const w = world(t), catalog = w.catalog([tool({ slug: "alpha", name: "Alpha", bucket: "paid", jobs: "workspace" })]);
+    const { result, requests } = recordedRun(w, ["find", "workspace", "--json"], { OPSFY_CATALOG: catalog, ...extra },
+      reply ? [{ path: "/api/tools", ...reply }] : []);
+    check(result, 0, JSON.stringify({ ok: true, matches: [{ slug: "alpha", name: "Alpha", group: "Pay as you go",
+      action: open ? "open · opsfy call alpha" : "not open yet" }] }) + "\n", "");
+    assert.equal(requests.length, reads);
+  }
+});
+
+test("the catalogue refreshes at one hour and keeps a younger cache on the same clock", t => {
+  for (const minutes of [59, 60, 61]) {
+    const w = world(t), directory = path.join(w.home, ".opsfy", "cache"), filename = path.join(directory, "tools.json");
+    fs.mkdirSync(directory, { recursive: true });
+    const cached = { version: bundled.version, tools: [tool({ slug: "cached" })] };
+    const fetched = { version: bundled.version, tools: [tool({ slug: "fetched" })] };
+    const bytes = JSON.stringify(cached);
+    fs.writeFileSync(filename, bytes);
+    // world.run pins the child to this same Date.now value.
+    const when = new Date(Date.now() - minutes * 60000);
+    fs.utimesSync(filename, when, when);
+    const before = fs.statSync(filename);
+    const { result, requests } = recordedRun(w, ["list", "--json"], { OPSFY_CATALOG: undefined },
+      [{ path: "/tools.json", body: fetched }]);
+    check(result, 0, JSON.stringify({ ok: true, ...(minutes < 60 ? cached : fetched) }) + "\n", "");
+    assert.equal(requests.length, minutes < 60 ? 0 : 1);
+    if (minutes < 60) {
+      assert.equal(fs.readFileSync(filename, "utf8"), bytes);
+      assert.equal(fs.statSync(filename).mtimeMs, before.mtimeMs);
+    } else assert.deepEqual(JSON.parse(fs.readFileSync(filename, "utf8")), fetched);
+  }
+});
+
+test("an hour-old catalogue refresh failure still falls back to cached then bundled tools", t => {
+  for (const valid of [true, false]) {
+    const w = world(t), directory = path.join(w.home, ".opsfy", "cache"), filename = path.join(directory, "tools.json");
+    fs.mkdirSync(directory, { recursive: true });
+    const cached = { version: bundled.version, tools: [tool({ slug: "cached", name: "Needle" })] };
+    const bytes = valid ? JSON.stringify(cached) : "invalid JSON";
+    fs.writeFileSync(filename, bytes);
+    const when = new Date(Date.now() - 61 * 60000);
+    fs.utimesSync(filename, when, when);
+    const before = fs.statSync(filename);
+    const { result, requests } = recordedRun(w, ["find", valid ? "needle" : "tavily", "--json"],
+      { OPSFY_CATALOG: undefined }, [{ path: "/tools.json", error: "TypeError" }]);
+    check(result, 0, undefined, "");
+    assert.equal(requests.length, 1);
+    assert.ok(JSON.parse(result.stdout).matches.some(match => match.slug === (valid ? "cached" : "tavily")));
+    assert.equal(fs.readFileSync(filename, "utf8"), bytes);
+    assert.equal(fs.statSync(filename).mtimeMs, before.mtimeMs);
+  }
+});
+
+test("unavailable jobs lists give their own retry step while one-job failures keep theirs", t => {
+  const listMessage = "the jobs list could not be read; do not start another job · run opsfy jobs --json again in a minute";
+  const id = "f".repeat(32), jobMessage = "the job could not be checked; do not start another · run opsfy job status " + id + " --json";
+  const replies = [{ status: 503, body: { ok: false, error: "storage_unavailable" } }, { error: "TypeError" },
+    { body: "invalid JSON" }, { body: { ok: true, jobs: "invalid" } }, { body: {}, headers: { "cache-control": "public" } }];
+  for (const reply of replies) for (const json of [true, false]) {
+    for (const command of ["list", "status", "wait", "stop", "result"]) {
+      const w = world(t), args = command === "list" ? ["jobs"] : ["job", command, id];
+      const route = "/api/jobs" + (command === "list" ? "" : "/" + id + (["stop", "result"].includes(command) ? "/" + command : ""));
+      const message = command === "list" ? listMessage : jobMessage;
+      const { result, requests } = recordedRun(w, [...args, ...(json ? ["--json"] : [])],
+        { OPSFY_API_KEY: "opsfy_sk_" + "a".repeat(64) }, [{ path: route, method: command === "stop" ? "POST" : "GET", ...reply }]);
+      check(result, 1, json ? JSON.stringify({ ok: false, error: "job_unavailable", message }) + "\n" : "",
+        json ? "" : "job_unavailable: " + message + "\n");
+      assert.equal(requests.length, 1);
+      assert.equal(requests[0].url, "http://127.0.0.1:9" + route);
     }
   }
 });

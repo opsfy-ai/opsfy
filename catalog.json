@@ -1,5 +1,5 @@
 {
-  "note": "The Opsfy catalogue for the CLI: 36 tools in the Pay as you go, One-command install and Self-serve buckets; one-command apps carry their install recipe (a Homebrew cask from the upstream release, or a git clone and the app's own setup).",
+  "note": "The Opsfy catalogue for the CLI: 40 tools in the Pay as you go, One-command install and Self-serve buckets; one-command apps carry their install recipe (a Homebrew cask from the upstream release, or a git clone and the app's own setup).",
   "version": "2026-10-11",
   "tools": [
     {
